@@ -1,0 +1,162 @@
+<!-- templates/modales/modal_crea_folder.html -->
+<div class="modal fade" id="modalCreaCarpeta" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="formCreaCarpeta" novalidate>
+                <div class="modal-header">
+                    <h5 class="modal-title">Crear carpeta</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="codigoInput" class="form-label">Código</label>
+                        <input type="text" class="form-control" id="codigoInput" maxlength="11" placeholder="Ej: 26FP36CF567" required>
+                        <div class="invalid-feedback" id="codigoError">Formato inválido. Debe ser: 2números+2letras+2números+2letras+3números.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="asesorSelect" class="form-label">Asesor</label>
+                        <select id="asesorSelect" class="form-select" required></select>
+                        <div class="invalid-feedback" id="asesorError">Seleccione un asesor.</div>
+                    </div>
+
+                    <div id="submitError" class="alert alert-danger d-none" role="alert"></div>
+                    <div id="submitSuccess" class="alert alert-success d-none" role="alert"></div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Crear</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Axios CDN (si no está ya cargado en la plantilla base) -->
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+<script>
+    (function(){
+        const asesores = ["ALFREDO", "GLORIA", "PACO", "VERA", "GEMMA", "CAMILO", "SANTIAGO", "ANNA", "LOURDES", "LORENA", "PATRICIA", "JOSE", "DAVID"];
+        const asesorSelect = document.getElementById('asesorSelect');
+        const codigoInput = document.getElementById('codigoInput');
+        const form = document.getElementById('formCreaCarpeta');
+        const codigoError = document.getElementById('codigoError');
+        const asesorError = document.getElementById('asesorError');
+        const submitError = document.getElementById('submitError');
+        const submitSuccess = document.getElementById('submitSuccess');
+
+        // Poblar select
+        asesores.forEach(a => {
+            const opt = document.createElement('option');
+            opt.value = a;
+            opt.textContent = a;
+            asesorSelect.appendChild(opt);
+        });
+
+        // Validación: 2números+2letras+2números+2letras+3números
+        function validaCodigo(v){
+            v = (v || '').toUpperCase();
+            return /^[0-9]{2}[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{3}$/.test(v);
+        }
+
+        // Convertir a mayúsculas al escribir
+        codigoInput.addEventListener('input', () => {
+            const pos = codigoInput.selectionStart;
+            codigoInput.value = codigoInput.value.toUpperCase();
+            codigoInput.setSelectionRange(pos, pos);
+            codigoInput.classList.remove('is-invalid');
+            submitError.classList.add('d-none');
+            submitSuccess.classList.add('d-none');
+        });
+
+        asesorSelect.addEventListener('change', () => {
+            asesorSelect.classList.remove('is-invalid');
+        });
+
+        form.addEventListener('submit', function(e){
+            e.preventDefault();
+            submitError.classList.add('d-none');
+            submitSuccess.classList.add('d-none');
+
+            const codigo = codigoInput.value.trim().toUpperCase();
+            const asesor = asesorSelect.value;
+
+            let ok = true;
+            if (!validaCodigo(codigo)) {
+                codigoInput.classList.add('is-invalid');
+                ok = false;
+            } else {
+                codigoInput.classList.remove('is-invalid');
+            }
+
+            if (!asesor) {
+                asesorSelect.classList.add('is-invalid');
+                ok = false;
+            } else {
+                asesorSelect.classList.remove('is-invalid');
+            }
+
+            if (!ok) return;
+
+            // Petición axios a /create_folder
+            axios.post('/create_folder', { codigo: codigo, asesor: asesor })
+                .then(resp => {
+                    submitSuccess.textContent = resp.data && resp.data.message ? resp.data.message : 'Carpeta creada correctamente.';
+                    
+                    submitSuccess.classList.remove('d-none');
+                    // intenta descargar si la respuesta ya trae el fichero (blob/arraybuffer)
+                    function downloadFromResponse(res) {
+                        const isArrayBuffer = res.data instanceof ArrayBuffer;
+                        const isBlob = typeof Blob !== 'undefined' && res.data instanceof Blob;
+                        if (!isArrayBuffer && !isBlob) return false;
+
+                        const blob = isArrayBuffer ? new Blob([res.data], { type: (res.headers && res.headers['content-type']) || 'application/zip' }) : res.data;
+                        let filename = `${codigo}.zip`;
+                        const disp = res.headers && (res.headers['content-disposition'] || res.headers['Content-Disposition']);
+                        if (disp) {
+                            const m = /filename\*?=(?:UTF-8'')?["']?([^;"']+)/i.exec(disp);
+                            if (m && m[1]) filename = decodeURIComponent(m[1].replace(/["']/g, ''));
+                        }
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        setTimeout(() => URL.revokeObjectURL(url), 1000);
+                        return true;
+                    }
+
+                    if (!downloadFromResponse(resp)) {
+                        // si la primera respuesta no es el blob, re-solicita con responseType 'blob' y descarga
+                        axios.post('/create_folder', { codigo: codigo, asesor: asesor }, { responseType: 'blob' })
+                            .then(r2 => downloadFromResponse(r2) || (function(){
+                                submitError.textContent = 'No se recibió el fichero para descargar.';
+                                submitError.classList.remove('d-none');
+                            })())
+                            .catch(() => {
+                                submitError.textContent = 'Error al descargar el fichero.';
+                                submitError.classList.remove('d-none');
+                            });
+                    }
+                    // opcional: cerrar modal después de un rato
+                    setTimeout(() => {
+                        const modalEl = document.getElementById('modalCreaFolder');
+                        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                        modal.hide();
+                    }, 1000);
+                })
+                .catch(err => {
+                    const msg = err.response && err.response.data && err.response.data.message
+                        ? err.response.data.message
+                        : 'Error al crear la carpeta.';
+                    submitError.textContent = msg;
+                    submitError.classList.remove('d-none');
+                });
+        });
+    })();
+</script>

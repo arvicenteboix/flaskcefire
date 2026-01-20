@@ -1,0 +1,634 @@
+<style>
+    #dropzone { border: 2px dashed #6c757d; border-radius: .5rem; padding: 2rem; text-align: center; cursor: pointer; }
+    #dropzone.dragover { background: rgba(0,0,0,0.03); border-color: #0d6efd; }
+    #file-name { margin-top: .5rem; font-weight: 500; }
+  </style>
+
+
+  <div class="modal fade" id="modalCreaDesignes" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Subir archivo Excel</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div id="dropzone">
+            Arrastra aquí tu archivo Excel (.xlsx, .xls) o haz clic para seleccionarlo
+            <div id="file-name" class="text-truncate"></div>
+          </div>
+          <input id="fileInput" type="file" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" style="display:none">
+        </div>
+        <div class="modal-footer">
+            <div class="d-flex flex-column gap-2 w-100 align-items-center justify-content-center">
+            <button type="button" id="btnGeneraDesignes" class="btn btn-secondary btn-lg w-100">Genera Designes</button>
+            <button type="button" id="btnGeneraCertifica" class="btn btn-secondary btn-lg w-100">Genera Certifica</button>
+            <button type="button" id="btnGeneraMinutaDGFP" class="btn btn-secondary btn-lg w-100">Genera Minuta DGFP</button>
+            <button type="button" id="btnGeneraResolcDGFP" class="btn btn-secondary btn-lg w-100">Genera Resolc DGFP</button>
+            
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      let selectedFile = null;
+      let currentAction = null;
+      const dropzone = document.getElementById('dropzone');
+      const fileInput = document.getElementById('fileInput');
+      const fileNameEl = document.getElementById('file-name');
+      const buttons = {
+        designes: document.getElementById('btnGeneraDesignes'),
+        certifica: document.getElementById('btnGeneraCertifica'),
+        minuta: document.getElementById('btnGeneraMinutaDGFP'),
+        resolc: document.getElementById('btnGeneraResolcDGFP')
+      };
+
+      function setFile(file) {
+        if (!file) return;
+        selectedFile = file;
+        fileNameEl.textContent = file.name;
+      }
+
+      // Drag & drop
+      ['dragenter', 'dragover'].forEach(evt =>
+        dropzone.addEventListener(evt, e => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropzone.classList.add('dragover');
+        })
+      );
+      ['dragleave', 'drop', 'dragend'].forEach(evt =>
+        dropzone.addEventListener(evt, e => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropzone.classList.remove('dragover');
+        })
+      );
+      dropzone.addEventListener('drop', e => {
+        const f = e.dataTransfer.files && e.dataTransfer.files[0];
+        if (f) setFile(f);
+      });
+
+      // Click to open file selector
+      dropzone.addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', () => {
+        const f = fileInput.files && fileInput.files[0];
+        if (f) setFile(f);
+      });
+
+      // Upload helper
+      async function uploadFor(action) {
+        if (!selectedFile) {
+          alert('Selecciona un archivo primero.');
+          return;
+        }
+        // Map action to endpoint (ajusta rutas según backend)
+        const endpoints = {
+          designes: '/designes',
+          certifica: '/certifica',
+        };
+        const url = endpoints[action];
+        if (!url) return;
+
+        // Disable UI
+        Object.values(buttons).forEach(b => b.disabled = true);
+        const fd = new FormData();
+        fd.append('file', selectedFile);
+
+        try {
+          // pedir como blob porque el backend puede devolver un fichero
+          
+          const resp = await axios.post(url, fd, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+            responseType: 'blob'
+          });
+
+          const blob = resp.data;
+          const contentType = (resp.headers && resp.headers['content-type']) || '';
+
+          // función para cerrar modal y limpiar UI
+          const cleanAndClose = (msg) => {
+            selectedFile = null;
+            fileInput.value = '';
+            fileNameEl.textContent = '';
+            const modalEl = document.getElementById('modalCreaDesignes');
+            if (modalEl) {
+              const bsModal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+              bsModal.hide();
+            }
+            if (msg) alert(msg);
+          };
+
+          if (contentType.includes('application/json')) {
+            // el servidor devolvió JSON dentro del blob (mensaje de éxito/información)
+            const text = await blob.text();
+            let data;
+            try { data = JSON.parse(text); } catch { data = { message: text }; }
+            // cleanAndClose(data?.message || 'Operación completada');
+          } else {
+            // es un fichero: descargar
+            const cd = (resp.headers && (resp.headers['content-disposition'] || resp.headers['Content-Disposition'])) || '';
+            let filename = 'download';
+            const m = cd.match(/filename\*?=(?:UTF-8'')?["']?([^;"']+)/i);
+            if (m && m[1]) {
+              try { filename = decodeURIComponent(m[1]); } catch { filename = m[1]; }
+            } else if (selectedFile && selectedFile.name) {
+              // sugerir nombre basado en archivo subido
+              const base = selectedFile.name.replace(/\.[^.]+$/, '');
+              filename = base + '_result';
+            }
+
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(blobUrl);
+
+            //cleanAndClose('Fichero descargado');
+          }
+        } catch (err) {
+          // intentar extraer mensaje de error si la respuesta incluye JSON en blob
+          let msg = err?.message || 'Error en la subida';
+          if (err?.response && err.response.data) {
+            try {
+              const errBlob = err.response.data;
+              if (typeof errBlob.text === 'function') {
+          const txt = await errBlob.text();
+          try { msg = JSON.parse(txt)?.message || txt; } catch { msg = txt; }
+              }
+            } catch (e) { /* ignore */ }
+          }
+          alert(msg);
+        } finally {
+          Object.values(buttons).forEach(b => b.disabled = false);
+        }
+      }
+
+
+
+      async function uploadForResolc () {
+        if (!selectedFile) {
+          alert('Selecciona un archivo primero.');
+          return;
+        }
+        // Map action to endpoint (ajusta rutas según backend)
+
+        const url = '/resolc-dgfp';
+
+
+
+        // Disable UI
+        Object.values(buttons).forEach(b => b.disabled = true);
+        const fd = new FormData();
+        fd.append('file', selectedFile);
+        
+
+        try {
+          
+          const resp = await axios.post(url, fd, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+            responseType: 'json'
+          });
+
+          const data = resp.data;
+          
+          console.log(resp.data['personas'][0]);
+          const personas = data.personas || [];
+          if (!personas.length) {
+            alert('No hay personas en la respuesta');
+          } else {
+            const resultados = [];
+            const showModalFor = (i) => {
+              const p = personas[i] || {};
+              const modalId = 'modalPersonaFill';
+              const nombre = p
+              const html = `
+          <div class="modal fade" id="${modalId}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title">Persona: ${nombre}</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                  <div class="mb-3">
+                    <label class="form-label">Fecha</label>
+                    <input type="date" class="form-control" id="fechaInput">
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">Centro educativo</label>
+                    <input type="text" class="form-control" id="centroInput" placeholder="Nombre del centro">
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">Cargo</label>
+                    <input type="text" class="form-control" id="cargoInput" placeholder="Cargo">
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                  <button type="button" class="btn btn-primary" id="nextBtn">${i === personas.length - 1 ? 'Guardar' : 'Siguiente'}</button>
+                </div>
+              </div>
+            </div>
+          </div>`;
+              document.body.insertAdjacentHTML('beforeend', html);
+              const modalEl = document.getElementById(modalId);
+              const bsModal = new bootstrap.Modal(modalEl);
+              bsModal.show();
+
+              const nextBtn = modalEl.querySelector('#nextBtn');
+              nextBtn.addEventListener('click', () => {
+                const fecha = modalEl.querySelector('#fechaInput').value;
+                const centro = modalEl.querySelector('#centroInput').value.trim();
+                const cargo = modalEl.querySelector('#cargoInput').value.trim();
+                resultados.push({ persona: p, fecha, centro, cargo });
+                bsModal.hide();
+              });
+
+              modalEl.addEventListener('hidden.bs.modal', async () => {
+                modalEl.remove();
+                if (resultados.length === i + 1) {
+                  if (i + 1 < personas.length) showModalFor(i + 1);
+                  else {
+                    console.log('Datos recogidos:', resultados);
+                    //alert('Datos recogidos para todas las personas.');
+                    const fd2 = new FormData();
+                    fd2.append('file', selectedFile);
+                    fd2.append('resultados', JSON.stringify(resultados));
+
+                    const resp2 = await axios.post('/genera-resolc', fd2, {
+                      headers: { 'Content-Type': 'multipart/form-data' },
+                      responseType: 'blob'
+                    });
+
+                    const blobResp = resp2.data;
+                    const contentType2 = (resp2.headers && resp2.headers['content-type']) || '';
+
+                    if (contentType2.includes('application/json')) {
+                      const text = await blobResp.text();
+                      let data;
+                      try { data = JSON.parse(text); } catch { data = { message: text }; }
+
+                      selectedFile = null;
+                      fileInput.value = '';
+                      fileNameEl.textContent = '';
+                      const modalElMain = document.getElementById('modalCreaDesignes');
+                      if (modalElMain) {
+                        const bsModalMain = bootstrap.Modal.getInstance(modalElMain) || new bootstrap.Modal(modalElMain);
+                        // bsModalMain.hide();
+                      }
+                      // alert(data?.message || 'Operación completada');
+                    } else {
+                      const cd2 = (resp2.headers && (resp2.headers['content-disposition'] || resp2.headers['Content-Disposition'])) || '';
+                      let filename2 = 'download';
+                      const m2 = cd2.match(/filename\*?=(?:UTF-8'')?["']?([^;"']+)/i);
+                      if (m2 && m2[1]) {
+                        try { filename2 = decodeURIComponent(m2[1]); } catch { filename2 = m2[1]; }
+                      } else if (selectedFile && selectedFile.name) {
+                        const base2 = selectedFile.name.replace(/\.[^.]+$/, '');
+                        filename2 = base2 + '_resolc';
+                      }
+
+                      const blobUrl2 = URL.createObjectURL(blobResp);
+                      const a2 = document.createElement('a');
+                      a2.href = blobUrl2;
+                      a2.download = filename2;
+                      document.body.appendChild(a2);
+                      a2.click();
+                      a2.remove();
+                      URL.revokeObjectURL(blobUrl2);
+
+                      //selectedFile = null;
+                      //fileInput.value = '';
+                      //fileNameEl.textContent = '';
+                      const modalElMain = document.getElementById('modalCreaDesignes');
+                      if (modalElMain) {
+                        const bsModalMain = bootstrap.Modal.getInstance(modalElMain) || new bootstrap.Modal(modalElMain);
+                        //bsModalMain.hide();
+                      }
+                      //alert('Fichero descargado');
+                    }
+                    
+                  }
+                } else {
+                  // cancelado por el usuario
+                  console.log('Proceso cancelado. Datos parciales:', resultados);
+                }
+              }, { once: true });
+            };
+
+            showModalFor(0);
+          }
+          
+          // función para cerrar modal y limpiar UI
+
+          
+
+            //cleanAndClose('Fichero descargado');
+          
+        } catch (err) {
+          // intentar extraer mensaje de error si la respuesta incluye JSON en blob
+          let msg = err?.message || 'Error en la subida';
+          if (err?.response && err.response.data) {
+            try {
+              const errBlob = err.response.data;
+              if (typeof errBlob.text === 'function') {
+          const txt = await errBlob.text();
+          try { msg = JSON.parse(txt)?.message || txt; } catch { msg = txt; }
+              }
+            } catch (e) { /* ignore */ }
+          }
+          alert(msg);
+        } finally {
+          Object.values(buttons).forEach(b => b.disabled = false);
+        }
+
+      }
+
+
+      async function uploadForMinuta() {
+        if (!selectedFile) {
+          alert('Selecciona un archivo primero.');
+          return;
+        }
+        
+        const url = '/minuta-dgfp';
+        // Disable UI
+        Object.values(buttons).forEach(b => b.disabled = true);
+        const fd = new FormData();
+        fd.append('file', selectedFile);
+        
+        const resp = await axios.post(url, fd, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          responseType: 'json'
+        });
+
+        // Ensure we have a JS object/array: if server returned a JSON string, parse it; if axios already parsed, use it.
+        let data = resp.data;
+
+        console.log('Respuesta recibida:', typeof data, data);
+        if (typeof data === 'string') {
+          try {
+            // reemplazar NaN/Infinity no válidos en JSON por null antes de parsear
+            const cleaned = data.replace(/\bNaN\b/g, 'null').replace(/\bInfinity\b/g, 'null').replace(/\b-Infinity\b/g, 'null');
+            tram = JSON.parse(cleaned);
+          } catch (e) {
+            console.error('Error parsing JSON string:', e);
+            tram = [];
+          }
+        }
+
+        console.log('Datos procesados:', tram);
+        console.log(tram['personas'].length);
+        personas = tram['personas'] || [];
+        identificativos = tram['identificativos'] || [];
+
+        console.log('Personas extraídas:', personas);
+        
+
+
+        if (!personas.length) {
+          alert('No hay personas en la respuesta');
+        } else {
+          const resultados = [];
+
+            const onlyText = s => /^[A-Za-zÀ-ÖØ-öø-ÿ\s'’-]+$/.test((s||'').toString().trim());
+            const nifValido = s => /^[0-9]{8}[A-Za-z]$/.test((s||'').toString().trim());
+            const textoNumeros = s => /^[A-Za-z0-9À-ÖØ-öø-ÿ\s\.,'’()_\+\-\/\\:;%&@#\*\=\?\!¿¡]*$/.test((s||'').toString().trim());
+            const cpValido = s => /^\d{5}$/.test((s||'').toString().trim());
+            const soloCifras = s => /^\d+(\.\d+)?$/.test((s||'').toString().trim());
+            const ibanValido = s => /^[A-Z]{2}[0-9A-Z]{13,30}$/.test(((s||'').toString().replace(/\s+/g,'')).toUpperCase());
+            const emailValido = s => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s||'').toString().trim());
+            const telefonoValido = s => /^\d{9}$/.test((s||'').toString().trim());
+
+            const showModalFor = (i) => {
+              const p = personas[i] || {};
+              const modalId = `modalMinuta_${i}`;
+              const mov = (p.Movimientos && p.Movimientos[0]) || {};
+              const pre = {
+                "Nombre y Apellidos": p.Nombre || '',
+                "NIF": p.DNI || '',
+                "Domicili": p.Domicili || '',
+                "CP": p.CP || '',
+                "Población": p.Población || '',
+                "Provincia": p.Provincia || '',
+                "Nombre del curso": identificativos['CÓDIGO EDICIÓN / CODI EDICIÓ']+ " - "+ identificativos['TÍTULO ACCIÓN FORMATIVA / TÍTOL ACCIÓ FORMATIVA'] || '',
+                "Importe bruto": mov['IMPORTE / IMPORT (€)'] != null ? String(mov['IMPORTE / IMPORT (€)']) : 'Error',
+                "Importe neto": mov['IMPORTE / IMPORT (€)'] != null ? String(mov['IMPORTE / IMPORT (€)'] - 0.15*mov['IMPORTE / IMPORT (€)']) : 'Error',
+                "IBAN": p.IBAN || '',
+                "BIC": p.BIC || '',
+                "Email": p.Email || '',
+                "Teléfono": p.Teléfono || p.Telefono || '',
+                "Grup": p.Grup || '',
+                "Nivell": p.Nivell || '',
+                "Relacio_juridica": p.Relacio_juridica || p.JUR? p.JUR : '',
+                "Dates_inici_final": identificativos['FECHAS REALIZACIÓN / DATES REALITZACIÓ'] || ''
+              };
+
+              const html = `
+          <div class="modal fade" id="${modalId}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title">Persona: ${pre['Nombre y Apellidos'] || pre['NIF']}</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <style>
+                  /* hacer el modal más ancho solo para este modal */
+                  #${modalId} .modal-dialog { max-width: 1100px; }
+                  /* proteger en pantallas pequeñas */
+                  @media (max-width: 1199.98px) {
+                    #${modalId} .modal-dialog { max-width: 95%; }
+                  }
+                </style>
+                    <div class="modal-body">
+                      <div class="container-fluid">
+                      <div class="row g-3">
+                        ${Object.keys(pre).map(key => `
+                        <div class="col-12 col-md-4">
+                          <div class="mb-3">
+                          <label class="form-label">${key}</label>
+                          <input type="text" class="form-control" id="${modalId}_${key.replace(/\s+/g,'_')}" value="${(pre[key]||'').toString().replace(/"/g,'&quot;')}">
+                          <div class="invalid-feedback d-none" id="${modalId}_${key.replace(/\s+/g,'_')}_err"></div>
+                          </div>
+                        </div>
+                        `).join('')}
+                      </div>
+                      </div>
+                    </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                  <button type="button" class="btn btn-primary" id="nextBtn">${i === personas.length - 1 ? 'Guardar' : 'Siguiente'}</button>
+                </div>
+              </div>
+            </div>
+          </div>`;
+              document.body.insertAdjacentHTML('beforeend', html);
+              const modalEl = document.getElementById(modalId);
+              const bsModal = new bootstrap.Modal(modalEl);
+              bsModal.show();
+
+              const nextBtn = modalEl.querySelector(`#nextBtn`);
+              
+              nextBtn.addEventListener('click', async () => {
+                const valores = {};
+                const errores = {};
+
+                // gather values
+                for (const key of Object.keys(pre)) {
+                  const id = `${modalId}_${key.replace(/\s+/g,'_')}`;
+                  valores[key] = (modalEl.querySelector(`#${id}`).value || '').toString().trim();
+                }
+                //alert("Valores recogidos");
+                // validations per specific field
+                
+                errores["Nombre y Apellidos"] = onlyText(valores["Nombre y Apellidos"]) ? "" : "Solo texto permitido";
+                errores["NIF"] = nifValido(valores["NIF"]) ? "" : "Debe tener 8 números y 1 letra";
+                errores["Domicili"] = textoNumeros(valores["Domicili"]) ? "" : "Solo texto permitido";
+                errores["CP"] = cpValido(valores["CP"]) ? "" : "Debe tener 5 cifras";
+                errores["Población"] = onlyText(valores["Población"]) ? "" : "Solo texto permitido";
+                errores["Provincia"] = onlyText(valores["Provincia"]) ? "" : "Solo texto permitido";
+                errores["Nombre del curso"] = textoNumeros(valores["Nombre del curso"]) ? "" : "Solo texto permitido";
+                errores["Importe bruto"] = soloCifras(valores["Importe bruto"]) ? "" : "Solo cifras válidas";
+                errores["Importe neto"] = soloCifras(valores["Importe neto"]) ? "" : "Solo cifras válidas";
+                errores["IBAN"] = ibanValido(valores["IBAN"]) ? "" : "IBAN inválido";
+                errores["BIC"] = "";
+                errores["Email"] = emailValido(valores["Email"]) ? "" : "Email inválido";
+                errores["Teléfono"] = telefonoValido(valores["Teléfono"]) ? "" : "Debe tener 9 cifras";
+                errores["Grup"] = "";
+                errores["Nivell"] = "";
+                errores["Relacio_juridica"] = "";
+                errores["Dates_inici_final"] = "";
+                
+                let elErr = "";
+                // show errors if any
+                var errorMsg = "";
+                let hasError = false;
+                for (const key of Object.keys(pre)) {
+                  //const idErr = `${modalId}_${key.replace(/\s+/g,'_')}_err`;
+                  //const elErr = modalEl.querySelector(`#${idErr}`);
+                  
+                  if (errores.hasOwnProperty(key) && errores[key]) {
+                    hasError = true;
+                    errorMsg += key + ": " + errores[key] + "\n";
+                    //elErr.classList.remove('d-none');
+                  } else {
+                    elErr.textContent = '';
+                    //elErr.classList.add('d-none');
+                  }
+                }
+
+                if (hasError) {
+                  alert('Corrige los errores antes de continuar.\n' + errorMsg);
+                  return;
+                }
+                
+                resultados.push({ persona: p, valores, errores });
+                bsModal.hide();
+              });
+
+              modalEl.addEventListener('hidden.bs.modal', () => {
+                modalEl.remove();
+                if (resultados.length === i + 1) {
+                  if (i + 1 < personas.length) {
+                    showModalFor(i + 1);
+                  } else {
+                    (async () => {
+                      try {
+                        const fd2 = new FormData();
+                        fd2.append('file', selectedFile);
+                        fd2.append('resultados', JSON.stringify(resultados));
+
+                        const resp2 = await axios.post('/genera-minuta', fd2, {
+                          headers: { 'Content-Type': 'multipart/form-data' },
+                          responseType: 'blob'
+                        });
+
+                        const blobResp = resp2.data;
+                        const contentType2 = (resp2.headers && resp2.headers['content-type']) || '';
+
+                        if (contentType2.includes('application/json')) {
+                          const text = await blobResp.text();
+                          let data2;
+                          try { data2 = JSON.parse(text); } catch { data2 = { message: text }; }
+                          selectedFile = null; fileInput.value = ''; fileNameEl.textContent = '';
+                          const modalElMain = document.getElementById('modalCreaDesignes');
+                          if (modalElMain) {
+                            const bsModalMain = bootstrap.Modal.getInstance(modalElMain) || new bootstrap.Modal(modalElMain);
+                            bsModalMain.hide();
+                          }
+                          alert(data2?.message || 'Operación completada');
+                        } else {
+                          const cd2 = (resp2.headers && (resp2.headers['content-disposition'] || resp2.headers['Content-Disposition'])) || '';
+                          let filename2 = 'download';
+                          const m2 = cd2.match(/filename\*?=(?:UTF-8'')?["']?([^;"']+)/i);
+                          if (m2 && m2[1]) {
+                            try { filename2 = decodeURIComponent(m2[1]); } catch { filename2 = m2[1]; }
+                          } else if (selectedFile && selectedFile.name) {
+                            const base2 = selectedFile.name.replace(/\.[^.]+$/, '');
+                            filename2 = base2 + '_minuta';
+                          }
+
+                          const blobUrl2 = URL.createObjectURL(blobResp);
+                          const a2 = document.createElement('a');
+                          a2.href = blobUrl2;
+                          a2.download = filename2;
+                          document.body.appendChild(a2);
+                          a2.click();
+                          a2.remove();
+                          URL.revokeObjectURL(blobUrl2);
+
+                          //selectedFile = null; fileInput.value = ''; fileNameEl.textContent = '';
+                          const modalElMain = document.getElementById('modalCreaDesignes');
+                          if (modalElMain) {
+                            const bsModalMain = bootstrap.Modal.getInstance(modalElMain) || new bootstrap.Modal(modalElMain);
+                            // bsModalMain.hide();
+                          }
+                          // alert('Fichero descargado');
+                        }
+                      } catch (err) {
+                        let msg = err?.message || 'Error en la generación';
+                        if (err?.response && err.response.data) {
+                          try {
+                            const errBlob = err.response.data;
+                            if (typeof errBlob.text === 'function') {
+                              const txt = await errBlob.text();
+                              try { msg = JSON.parse(txt)?.message || txt; } catch { msg = txt; }
+                            }
+                          } catch (e) { /* ignore */ }
+                        }
+                        alert(msg);
+                      } finally {
+                        Object.values(buttons).forEach(b => b.disabled = false);
+                      }
+                    })();
+                  }
+                } else {
+                  console.log('Proceso cancelado o modal cerrado. Datos parciales:', resultados);
+                  Object.values(buttons).forEach(b => b.disabled = false);
+                }
+              }, { once: true });
+            };
+
+            showModalFor(0);
+          }
+
+
+
+
+        }
+      
+
+      // Button clicks -> set action and upload
+      buttons.designes.addEventListener('click', () => uploadFor('designes'));
+      buttons.certifica.addEventListener('click', () => uploadFor('certifica'));
+      buttons.minuta.addEventListener('click', () => uploadForMinuta());
+      buttons.resolc.addEventListener('click', () => uploadForResolc());
+    })();
+  </script>

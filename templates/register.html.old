@@ -1,0 +1,20 @@
+from werkzeug.security import generate_password_hash
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    msg = ""
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+
+        # Generar hash seguro (por defecto usa PBKDF2 + salt)
+        password_hash = generate_password_hash(password)  # o generate_password_hash(password, method="pbkdf2:sha256", salt_length=16)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO users (username, password) VALUES (?, ?)",
+            (username, password_hash),
+        )
+        mysql.connection.commit()
+        msg = "Usuario creado, ya puedes iniciar sesión"
+        return redirect(url_for("login"))
+    return render_template("register.html", msg=msg)

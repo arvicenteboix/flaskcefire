@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Inicio{% endblock %}
+
+{% block content %}
+  <h1 class="mb-4">Ferramentes de gestió CEFIRE FP</h1>
+  <br>
+  <h2>Usuari: {{ username }}</h2>
+  <div class="text-center mt-4"> 
+    <div class="modal fade" id="modalCreaBanners" tabindex="-1" aria-labelledby="modalCreaBannersLabel" aria-hidden="true">
+      <div class="modal-dialog modal-xl modal-dialog-centered" style="max-width:95%;">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalCreaBannersLabel">Crea banners</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body p-0">
+            <iframe src="https://cefirefp.github.io/docs/apps/baner/proves.html" class="w-100" style="height:80vh;border:0;" title="Creador de banners"></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+    <hr class="w-100 my-4 border-2 opacity-90">
+    <br>
+
+      <button type="button" class="btn btn-primary me-5 btn-lg" data-bs-toggle="modal" data-bs-target="#modalCreaCarpeta"><i class="fa-regular fa-folder-open" style="font-size:2.5rem;" aria-hidden="true"></i><br>crea carpeta</button>
+      <button type="button" class="btn btn-secondary me-5 btn-lg" data-bs-toggle="modal" data-bs-target="#modalCreaDesignes"><i class="fa-solid fa-file-invoice" style="font-size:2.5rem;" aria-hidden="true"></i><br>crea designa</button>
+      <button type="button" class="btn btn-success btn-lg" data-bs-toggle="modal" data-bs-target="#modalCreaBanners"><i class="fa-solid fa-image" style="font-size:2.5rem;" aria-hidden="true"></i><br>crea banners</button>
+    <br>
+    <br>
+    <hr class="w-100 my-4 border-2 opacity-90">
+    <div class="text-start w-100">
+      Selecciona una de les ferramentes per a començar a treballar. Has de pujar l'arxiu excel amb les dades corresponents a la carpeta o designa que vulgues crear.<br>En crea carpeta es genera la carpeta i es decarrega un arxiu zip amb l'estructura de carpetes i arxius buits.
+    </div>
+  </div>
+
+  <!-- Upload modal -->
+  {% include 'modales/modal_crea_carpeta.html' %}
+  {% include 'modales/modal_crea_designes.html' %}
+{% endblock %}

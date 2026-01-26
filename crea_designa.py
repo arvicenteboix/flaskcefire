@@ -1795,7 +1795,7 @@ def on_process(json_data, hoja_excel, tipo, resultados=None, minuta_datos=None):
                 if t == "des":
                     buffers = []
                     for persona in personas:
-                        buffer, path = generar_skills(datos=persona, identificativos=hoja_excel, partida="G01090205GE00000.422C00.22699 fons OT23000000")
+                        buffer, path = generar_skills(datos=persona, identificativos=hoja_excel, partida="G01090205GE00000.422C00.22699 fons TE22000053")
                         buffers.append((buffer, path))
                     return (buffers)
                 elif t == "cer":

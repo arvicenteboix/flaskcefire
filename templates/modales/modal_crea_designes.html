@@ -94,7 +94,7 @@
         if (!url) return;
 
         // Disable UI
-        Object.values(buttons).forEach(b => b.disabled = true);
+        // Object.values(buttons).forEach(b => b.disabled = true);
         const fd = new FormData();
         fd.append('file', selectedFile);
 
@@ -184,7 +184,7 @@
 
 
         // Disable UI
-        Object.values(buttons).forEach(b => b.disabled = true);
+        // Object.values(buttons).forEach(b => b.disabled = true);
         const fd = new FormData();
         fd.append('file', selectedFile);
         
@@ -360,7 +360,7 @@
         
         const url = '/minuta-dgfp';
         // Disable UI
-        Object.values(buttons).forEach(b => b.disabled = true);
+        // Object.values(buttons).forEach(b => b.disabled = true);
         const fd = new FormData();
         fd.append('file', selectedFile);
         
@@ -373,19 +373,29 @@
         let data = resp.data;
 
         console.log('Respuesta recibida:', typeof data, data);
+
+
         if (typeof data === 'string') {
           try {
             // reemplazar NaN/Infinity no válidos en JSON por null antes de parsear
             const cleaned = data.replace(/\bNaN\b/g, 'null').replace(/\bInfinity\b/g, 'null').replace(/\b-Infinity\b/g, 'null');
             tram = JSON.parse(cleaned);
+            console.log('JSON parseado:', tram);
           } catch (e) {
             console.error('Error parsing JSON string:', e);
             tram = [];
           }
+        } else if (typeof data === 'object' && data !== null) {
+          tram = data;
+        } else {
+          console.error('Respuesta inesperada del servidor:', data);
+          tram = [];
         }
 
+        
+
         console.log('Datos procesados:', tram);
-        console.log(tram['personas'].length);
+        //console.log(tram['personas'].length);
         personas = tram['personas'] || [];
         identificativos = tram['identificativos'] || [];
 

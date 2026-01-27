@@ -1,0 +1,42 @@
+<!-- templates/modales/modal_doc.html -->
+<!-- Modal trigger -->
+
+<!-- Modal -->
+<div class="modal fade" id="docsModal" tabindex="-1" aria-labelledby="docsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-fullscreen-lg-down" style="--bs-modal-width: 1300px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="docsModalLabel">Documentación CEFIRE</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body p-0">
+                <iframe id="docsIframe"
+                                data-src="https://cefirefp.github.io/docs/"
+                                src=""
+                                allowfullscreen
+                                style="width:100%; height:80vh; border:0;"
+                                title="Documentación CEFIRE"></iframe>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Script: carga el iframe al abrir y lo limpia al cerrar -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var modalEl = document.getElementById('docsModal');
+    var iframe = document.getElementById('docsIframe');
+    if (!modalEl || !iframe) return;
+    modalEl.addEventListener('shown.bs.modal', function () {
+        if (!iframe.getAttribute('src')) {
+            iframe.src = iframe.dataset.src || '';
+        }
+    });
+    modalEl.addEventListener('hidden.bs.modal', function () {
+        iframe.removeAttribute('src');
+    });
+});
+</script>

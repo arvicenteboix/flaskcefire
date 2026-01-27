@@ -501,5 +501,73 @@ def genera_minuta():
             pass
 
 
+# perfil
+@app.route("/actualizaperfil", methods=["POST"])
+def actualizaperfil():
+    if not session.get("logged_in"):
+        return redirect(url_for("login"))
+    cursor = conn.cursor()
+    user_id = session.get("user_id")
+    if request.method == "POST":
+        # aceptar JSON o form-data
+        if request.is_json:
+            data = request.get_json()
+        else:
+            data = request.form
+
+        nombre = data.get("nombre")
+        apellidos = data.get("apellidos")
+        email = data.get("email")
+        password = data.get("password", "")
+
+        # opcional: aceptar "usuario" o "username" si hace falta
+        username = data.get("usuario") or data.get("username")
+
+
+        if password == "":
+            try:
+                cursor.execute(
+                    "UPDATE users SET nombre = ?, apellidos = ?, email = ? WHERE id = ?",
+                    (nombre, apellidos, email, user_id),
+                )
+                conn.commit()
+            except sqlite3.IntegrityError as e:
+                return f"Error actualizando perfil: {e}", 400
+        else:
+            password = generate_password_hash(password)
+            try:
+                cursor.execute(
+                    "UPDATE users SET nombre = ?, apellidos = ?, email = ?, password = ? WHERE id = ?",
+                    (nombre, apellidos, email, password, user_id),
+                )
+                conn.commit()
+            except sqlite3.IntegrityError as e:
+                return f"Error actualizando perfil: {e}", 400
+        
+    return "Dades de perfil actualitzats correctament"
+
+    
+
+# datos perfil
+@app.route("/perfil", methods=["GET"])
+def perfil():
+    if not session.get("logged_in"):
+        return redirect(url_for("login"))
+    cursor = conn.cursor()
+    user_id = session.get("user_id")
+
+    cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+    user = cursor.fetchone()
+    if user:
+        perfil_data = {
+            "usuario": user["username"],
+            "nombre": user["nombre"],
+            "apellidos": user["apellidos"],
+            "email": user["email"],
+        }
+        return jsonify(perfil_data)
+    else:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=80, debug=False)

@@ -1,0 +1,125 @@
+<!-- templates/modales/modal_perfil_usr.html -->
+<div class="modal fade" id="modalPerfilUsr" tabindex="-1" aria-labelledby="modalPerfilUsrLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="formPerfilUsr" novalidate>
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalPerfilUsrLabel">Perfil d'usuari</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tancar"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="perfil_alert" class="alert d-none" role="alert"></div>
+
+                    <div class="mb-3">
+                        <label for="perfil_usuario" class="form-label">Usuari</label>
+                        <input type="text" class="form-control" id="perfil_usuario" name="usuario" disabled/>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="perfil_nombre" class="form-label">Nom</label>
+                        <input type="text" class="form-control" id="perfil_nombre" name="nombre" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="perfil_apellidos" class="form-label">Cognoms</label>
+                        <input type="text" class="form-control" id="perfil_apellidos" name="apellidos" />
+                    </div>
+
+
+                    <div class="mb-3">
+                        <label for="perfil_email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="perfil_email" name="email" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="perfil_password" class="form-label">Contrasenya (nou)</label>
+                        <input type="password" class="form-control" id="perfil_password" name="password" placeholder="Deixa buit per no canviar" />
+                    </div>
+
+                    {% if csrf_token %}
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    {% endif %}
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tancar</button>
+                    <button type="submit" class="btn btn-primary" id="btnActualitza">Actualitza dades</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+(function(){
+    function ensureAxios(cb){
+        if(window.axios) return cb();
+        var s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js';
+        s.onload = cb;
+        document.head.appendChild(s);
+    }
+
+    function showAlert(type, msg){
+        var a = document.getElementById('perfil_alert');
+        a.className = 'alert';
+        a.classList.add(type === 'success' ? 'alert-success' : 'alert-danger');
+        a.textContent = msg;
+        a.classList.remove('d-none');
+    }
+
+    ensureAxios(function(){
+        var modal = document.getElementById('modalPerfilUsr');
+        if(!modal) return;
+
+        modal.addEventListener('show.bs.modal', function(){
+            // carregar dades de /perfil
+            axios.get('/perfil')
+                .then(function(res){
+                    var d = res.data || {};
+                    document.getElementById('perfil_nombre').value = d.nombre || '';
+                    document.getElementById('perfil_apellidos').value = d.apellidos || '';
+                    document.getElementById('perfil_usuario').value = d.usuario || '';
+                    document.getElementById('perfil_email').value = d.email || '';
+                    //document.getElementById('perfil_password').value = '';
+                    var a = document.getElementById('perfil_alert');
+                    a.classList.add('d-none');
+                })
+                .catch(function(err){
+                    showAlert('error', 'No s\'han pogut carregar les dades.');
+                });
+        });
+
+        document.getElementById('formPerfilUsr').addEventListener('submit', function(e){
+            e.preventDefault();
+            var payload = {
+                "nombre": document.getElementById('perfil_nombre').value,
+                "apellidos": document.getElementById('perfil_apellidos').value,
+                "usuario": document.getElementById('perfil_usuario').value,
+                "email": document.getElementById('perfil_email').value,
+                "password": document.getElementById('perfil_password').value
+            };
+
+            // incloure csrf si existeix al DOM
+            var csrfInput = document.querySelector('input[name="csrf_token"]');
+            var headers = { 'Content-Type': 'application/json' };
+            if(csrfInput) headers['X-CSRFToken'] = csrfInput.value;
+
+            axios.post('/actualizaperfil', payload, { headers: headers })
+                .then(function(res){
+                    showAlert('success', (res.data && res.data.message) ? res.data.message : 'Dades actualitzades.');
+                    // opcional: tancar modal després d'uns instants
+                    //setTimeout(function(){
+                     //   var modalEl = bootstrap.Modal.getInstance(modal);
+                     //   if(modalEl) modalEl.hide();
+                    //}, 900);
+                })
+                .catch(function(err){
+                    var msg = 'Error en actualitzar les dades.';
+                    if(err.response && err.response.data && err.response.data.message) msg = err.response.data.message;
+                    showAlert('error', msg);
+                });
+        });
+    });
+})();
+</script>

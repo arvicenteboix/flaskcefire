@@ -23,9 +23,35 @@
     <hr class="w-100 my-4 border-2 opacity-90">
     <br>
 
-      <button type="button" class="btn btn-primary me-5 btn-lg" data-bs-toggle="modal" data-bs-target="#modalCreaCarpeta"><i class="fa-regular fa-folder-open" style="font-size:2.5rem;" aria-hidden="true"></i><br>crea carpeta</button>
-      <button type="button" class="btn btn-secondary me-5 btn-lg" data-bs-toggle="modal" data-bs-target="#modalCreaDesignes"><i class="fa-solid fa-file-invoice" style="font-size:2.5rem;" aria-hidden="true"></i><br>crea designa</button>
-      <button type="button" class="btn btn-success btn-lg" data-bs-toggle="modal" data-bs-target="#modalCreaBanners"><i class="fa-solid fa-image" style="font-size:2.5rem;" aria-hidden="true"></i><br>crea banners</button>
+      <div class="row w-100 g-2">
+        <div class="col">
+          <button type="button" class="btn btn-primary btn-lg w-100" data-bs-toggle="modal" data-bs-target="#modalCreaCarpeta">
+            <i class="fa-regular fa-folder-open" style="font-size:2.5rem;" aria-hidden="true"></i><br>crea carpeta
+          </button>
+        </div>
+        <div class="col">
+          <button type="button" class="btn btn-secondary btn-lg w-100" data-bs-toggle="modal" data-bs-target="#modalCreaDesignes">
+            <i class="fa-solid fa-file-invoice" style="font-size:2.5rem;" aria-hidden="true"></i><br>crea designa
+          </button>
+        </div>
+        <div class="col">
+          <button type="button" class="btn btn-success btn-lg w-100" data-bs-toggle="modal" data-bs-target="#modalCreaBanners">
+            <i class="fa-solid fa-image" style="font-size:2.5rem;" aria-hidden="true"></i><br>crea banners
+          </button>
+        </div>
+        <div class="col">
+          <button type="button" class="btn btn-info btn-lg w-100" data-bs-toggle="modal" data-bs-target="#docsModal">
+            <i class="fa-solid fa-book" style="font-size:2.5rem;" aria-hidden="true"></i><br>documentació
+          </button>
+        </div>
+        <div class="col">
+          <button type="button" class="btn btn-warning btn-lg w-100" data-bs-toggle="modal" data-bs-target="#modalPerfilUsr">
+            <i class="fa-solid fa-user" style="font-size:2.5rem;" aria-hidden="true"></i><br>perfil
+          </button>
+        </div>
+      </div>
+      
+
     <br>
     <br>
     <hr class="w-100 my-4 border-2 opacity-90">
@@ -37,4 +63,6 @@
   <!-- Upload modal -->
   {% include 'modales/modal_crea_carpeta.html' %}
   {% include 'modales/modal_crea_designes.html' %}
+  {% include 'modales/modal_doc.html' %}
+  {% include 'modales/modal_perfil_usr.html' %}
 {% endblock %}

@@ -4,14 +4,11 @@
 
 import os
 import json
-import tkinter as tk
-from tkinter import filedialog, messagebox
 import pandas as pd
 from docx import Document
 from docx.shared import Cm, Pt
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_ALIGN_VERTICAL, WD_ROW_HEIGHT_RULE
-from tkinter import messagebox
 from num2words import num2words
 import re
 from datetime import datetime
@@ -19,10 +16,6 @@ from docx.oxml import parse_xml
 from docx.oxml.ns import nsdecls
 import sys
 from io import BytesIO
-from tkinter import ttk
-import webbrowser
-
-from tkcalendar import DateEntry
 
 version = "v1.0.13"
 
@@ -36,7 +29,7 @@ def normaliza_fechas_realizacion(fecha_str):
     Si no cumple el formato esperado, muestra un error y devuelve una cadena vacía.
     """
     if not fecha_str or fecha_str.lower() == 'nan':
-        messagebox.showerror(
+        print(
             "Error en formato de fechas",
             "No se han encontrado fechas. Deben seguir el formato DD/MM/AA al DD/MM/AA"
         )
@@ -62,7 +55,7 @@ def normaliza_fechas_realizacion(fecha_str):
                     f1 = f2 = fechas[0]
                 else:
                     # No se reconoce el formato, mostrar error y devolver cadena vacía
-                    messagebox.showerror(
+                    print(
                         "Error en format de dates",
                         "Les dates no estan bé, han de seguir el format DD/MM/AA al DD/MM/AA"
                     )
@@ -95,12 +88,10 @@ def normaliza_fechas_realizacion(fecha_str):
 
     
     if duration < 5:
-        respuesta = messagebox.askyesno(
+        print(
             "Avís",
             f"La duració és de {duration} dies, que és menys de 5 dies. Desitja continuar?"
         )
-        if not respuesta:
-            return -1
     
     return f"{corta_fecha(f1)} al {corta_fecha(f2)}"
 
@@ -131,7 +122,7 @@ def extraer_datos_identificativos(nombre_archivo):
     if codigo:
         # Formato esperado: 25/26/27 + FP + 2 números + 2 letras + 3 números
         if not re.match(r'^(25|26|27)FP\d{2}[A-Z]{2}\d{3}$', codigo):
-            messagebox.showerror(
+            print(
                 "Error en format de codi",
                 f"El codi d'edició '{codigo}' no compleix el format esperat.\n\n"
                 f"Format requerit: 26FP##LL###\n"
@@ -313,23 +304,7 @@ def generar_certificas(datos, identificativos, numero_a_letras=lambda x:str(x)):
 
 
     save_path = doc_name
-    if sys.platform == 'darwin':
-        root = tk.Tk()
-        root.withdraw()  # Hide the main window
-        initial_dir = os.getcwd()
-        # initial_dir = os.getcwd()
-        # Extract filename from doc_name, assuming doc_name might include a path
-        initial_file = doc_name.split('/')[-1].split('\\')[-1]
-        file_path = filedialog.asksaveasfilename(
-            initialdir=initial_dir,
-            initialfile=initial_file,
-            defaultextension=".docx",
-            filetypes=[("Word Documents", "*.docx")]
-        )
-        if file_path:  # Only update save_path if user selected a file
-            save_path = file_path
-        root.destroy() # Destroy the Tkinter root window
-
+    
     doc.save(save_path)
     # Convertir a PDF si se desea
     '''
@@ -340,7 +315,7 @@ def generar_certificas(datos, identificativos, numero_a_letras=lambda x:str(x)):
             print(f"Error al convertir a PDF: {e}")
     '''
     try:
-        messagebox.showinfo("Documento generado", f"✅ Se ha creado '{identificativos.get('CÓDIGO EDICIÓN / CODI EDICIÓ', '')}_{datos['Nombre'].replace(' ', '_')}.docx' correctamente.")
+        print(f"✅ Se ha creado '{identificativos.get('CÓDIGO EDICIÓN / CODI EDICIÓ', '')}_{datos['Nombre'].replace(' ', '_')}.docx' correctamente.")
     except Exception:
         print("Documento generado correctamente")
 
@@ -466,22 +441,7 @@ def generar_documento(datos, identificativos, numero_a_letras=lambda x:str(x)):
     doc_name = f"{identificativos.get('CÓDIGO EDICIÓN / CODI EDICIÓ', '')}_DESIGNA_{datos['Nombre'].replace(' ', '_')}.docx"
 
     save_path = doc_name
-    if sys.platform == 'darwin':
-        root = tk.Tk()
-        root.withdraw()  # Hide the main window
-        initial_dir = os.getcwd()
-        # Extract filename from doc_name, assuming doc_name might include a path
-        initial_file = doc_name.split('/')[-1].split('\\')[-1]
-        file_path = filedialog.asksaveasfilename(
-            initialdir=initial_dir,
-            initialfile=initial_file,
-            defaultextension=".docx",
-            filetypes=[("Word Documents", "*.docx")]
-        )
-        if file_path:  # Only update save_path if user selected a file
-            save_path = file_path
-        root.destroy() # Destroy the Tkinter root window
-
+   
     doc.save(save_path)
     # Convertir a PDF si se desea
     '''
@@ -492,7 +452,7 @@ def generar_documento(datos, identificativos, numero_a_letras=lambda x:str(x)):
             print(f"Error al convertir a PDF: {e}")
     '''
     try:
-        messagebox.showinfo("Documento generado", f"✅ Se ha creado '{identificativos.get('CÓDIGO EDICIÓN / CODI EDICIÓ', '')}_{datos['Nombre'].replace(' ', '_')}.docx' correctamente.")
+        print(f"✅ Se ha creado '{identificativos.get('CÓDIGO EDICIÓN / CODI EDICIÓ', '')}_{datos['Nombre'].replace(' ', '_')}.docx' correctamente.")
     except Exception:
         print("Documento generado correctamente")
 
@@ -1236,141 +1196,8 @@ def generar_skills_certifica(datos, identificativos, numero_a_letras=lambda x:st
 
 
 def show_json(json_data):
-    top = tk.Toplevel()
-    top.title("Datos en JSON")
-    text = tk.Text(top, wrap='word', width=100, height=30)
-    text.insert('1.0', json_data)
-    text.pack(expand=True, fill='both')
-
-
-def minuta_skills(datos, identificativos, parent=None, minuta_datos=None):
-    # datos puede ser lista de personas o una sola persona
-    personas = datos if isinstance(datos, list) else [datos]
-
-    def to_float(v):
-        try:
-            s = str(v).replace("€", "").replace(",", ".").strip()
-            return float(s) if s and s.lower() != "nan" else 0.0
-        except Exception:
-            return 0.0
-
-    curso = identificativos.get('TÍTULO ACCIÓN FORMATIVA / TÍTOL ACCIÓ FORMATIVA', '') or ''
-    codigo = identificativos.get('CÓDIGO EDICIÓN / CODI EDICIÓ', '') or ''
-    nombre_curso_prefill = f"{codigo} - {curso}".strip(" -")
-    dates = identificativos.get('FECHAS REALIZACIÓN / DATES REALITZACIÓ', '') or ''
-    
-    entry_vars = []  # Para recolectar luego
-
-    # Campos por persona
-    for idx, persona in enumerate(personas, start=1):
-        # Solo procesar si todos los movimientos son 'minuta'
-        movs = persona.get('Movimientos', [])
-        if not all(
-            str(mov.get('MINUTA / DIETA / FACTURA/ MATERIAL', '')).strip().lower() == 'minuta' or str(mov.get('MINUTA / DIETA / FACTURA/ MATERIAL', '')).strip().lower() == 'caso-actividad'
-            for mov in movs
-        ):          
-            continue
-        movs = persona.get("Movimientos", [])
-        total = round(sum(to_float(mov.get('IMPORTE / IMPORT (€)', 0)) for mov in movs), 2)
-        neto = round(total * 0.85, 2)  # total - 15%
-        bruto = round(total, 2)
-
-    
-
-
-
-        # Preparar variables
-        vars_map = {
-            "Nombre y Apellidos": tk.StringVar(value=str(persona.get("Nombre", ""))),
-            "NIF": tk.StringVar(value=str(persona.get("DNI", ""))),
-            "Domicilio": tk.StringVar(value=""),
-            "CP": tk.StringVar(value=""),
-            "Población": tk.StringVar(value=""),
-            "Provincia": tk.StringVar(value=""),
-            "Nombre del curso": tk.StringVar(value=nombre_curso_prefill),
-            "Importe bruto": tk.StringVar(value=f"{bruto:.2f}"),
-            "Importe neto": tk.StringVar(value=f"{neto:.2f}"),
-            "IBAN": tk.StringVar(value=""),
-            "BIC": tk.StringVar(value=""),
-            "Email": tk.StringVar(value=""),
-            "Teléfono": tk.StringVar(value=""),
-            "Grup": tk.StringVar(value=""),
-            "Nivell": tk.StringVar(value=""),
-            "Relacio_juridica": tk.StringVar(value="FI"),
-            "Dates_inici_final": tk.StringVar(value=dates),
-        }
-
-        entry_vars.append(vars_map)
-
-        # Layout en grid 2 columnas de etiquetas/entradas
-        labels = list(vars_map.keys())
-        for i, label in enumerate(labels):
-            r = i // 2
-            c = (i % 2) * 2
-            tk.Label(lf, text=label + ":").grid(row=r, column=c, sticky="e", padx=5, pady=4)
-            e = tk.Entry(lf, textvariable=vars_map[label], width=40)
-            e.grid(row=r, column=c + 1, sticky="w", padx=5, pady=4)
-            if label == "Relacio_juridica":
-                combo = ttk.Combobox(lf, textvariable=vars_map[label], values=["FI", "FC", "NF"], state="readonly", width=37)
-                combo.grid(row=r, column=c + 1, sticky="w", padx=5, pady=4)
-            if label == "Nivell":
-                combo = ttk.Combobox(lf, textvariable=vars_map[label], values=["A26", "A24", "No aplica"], state="readonly", width=37)
-                combo.current(1)  # Selecciona "A24" por defecto (índice 1)
-                combo.grid(row=r, column=c + 1, sticky="w", padx=5, pady=4)
-
-
-    '''
-    def recopilar_datos():
-        salida = []
-        for vm in entry_vars:
-            salida.append({
-                "nombre_apellidos": vm["Nombre y Apellidos"].get(),
-                "nif": vm["NIF"].get(),
-                "domicilio": vm["Domicilio"].get(),
-                "cp": vm["CP"].get(),
-                "poblacion": vm["Población"].get(),
-                "provincia": vm["Provincia"].get(),
-                "curso": vm["Nombre del curso"].get(),
-                "importe_bruto": vm["Importe bruto"].get(),
-                "importe_neto": vm["Importe neto (bruto - 15%)"].get(),
-                "iban": vm["IBAN"].get(),
-                "bic": vm["BIC"].get(),
-            })
-        try:
-            show_json(json.dumps(salida, ensure_ascii=False, indent=2))
-        except Exception:
-            print(json.dumps(salida, ensure_ascii=False, indent=2))
-    '''
-    def recopilar_y_crear():
-        datos_recopilados = []
-        for vm in entry_vars:
-            datos_recopilados.append({
-                "Nombre": vm["Nombre y Apellidos"].get(),
-                "NIF": vm["NIF"].get(),
-                "Domicili": vm["Domicilio"].get(),
-                "CP": vm["CP"].get(),
-                "Población": vm["Población"].get(),
-                "Provincia": vm["Provincia"].get(),
-                "Nombre del curso": vm["Nombre del curso"].get(),
-                "Importe bruto": vm["Importe bruto"].get(),
-                "Importe neto": vm["Importe neto"].get(),
-                "IBAN": vm["IBAN"].get(),
-                "BIC": vm["BIC"].get(),
-                "Email": vm["Email"].get() if "Email" in vm else "",
-                "Teléfono": vm["Teléfono"].get() if "Teléfono" in vm else (vm["Telefono"].get() if "Telefono" in vm else ""),
-                "Grup": vm["Grup"].get() if "Grup" in vm else "",
-                "Nivell": vm["Nivell"].get() if "Nivell" in vm else "",
-                "Relacio_juridica": vm["Relacio_juridica"].get() if "Relacio_juridica" in vm else "",
-                "Dates_inici_final": vm["Dates_inici_final"].get() if "Dates_inici_final" in vm else "",
-            })
-        crea_minuta_skills_docx(datos_recopilados, identificativos)
-    
-    btn_frame = tk.Frame(top)
-    btn_frame.pack(fill="x", padx=10, pady=10)
-    tk.Button(btn_frame, text="Crear minutas", command=recopilar_y_crear).pack(side="left", padx=5)
-    tk.Button(btn_frame, text="Cerrar", command=on_close).pack(side="right", padx=5)
-
-
+    print("Datos JSON:")
+    print(json_data)
 
 
 def crea_minuta_skills_docx(dades, identificativos):
@@ -1770,6 +1597,7 @@ def on_process(json_data, hoja_excel, tipo, resultados=None, minuta_datos=None):
                 Buffer, path = crea_minuta_skills_docx(dades=minuta_datos, identificativos=hoja_excel)
                 return Buffer, path
             elif t == "resolc" or t == "cer" or t == "des":
+                print("JSON DATA:", json_data)
                 for persona in json_data:
                     # Filtrar movimientos que contienen "minuta" en el campo 'MINUTA / DIETA / FACTURA/ MATERIAL'
                     # Solo generar documento si TODOS los movimientos son 'minuta'
@@ -1822,7 +1650,9 @@ def on_process(json_data, hoja_excel, tipo, resultados=None, minuta_datos=None):
                         print ("FECHA:", fecha)
                         print ("CENTRE EDUCATIU:", centre_educatiu)
                         print ("CARREC:", carrec)
-                        buffer, path = generar_skills_resolc(datos=persona, identificativos=hoja_excel, fecha=fecha,  centre_educatiu=centre_educatiu, carrec=carrec,partida="G01090205GE00000.422C00.22699 fons OT23000000")
+                        fecha_obj = datetime.strptime(fecha, "%Y-%m-%d")  # ajusta el formato de entrada
+                        formato_deseado = fecha_obj.strftime("%d/%m/%Y")
+                        buffer, path = generar_skills_resolc(datos=persona, identificativos=hoja_excel, fecha=formato_deseado,  centre_educatiu=centre_educatiu, carrec=carrec,partida="G01090205GE00000.422C00.22699 fons OT23000000")
                         print (path)
                         print (buffer)
                         buffers3.append((buffer, path))
@@ -1835,11 +1665,10 @@ def on_process(json_data, hoja_excel, tipo, resultados=None, minuta_datos=None):
             # messagebox.showerror("Error", f"Error processant l'archivo: {e}")
 
 
-
+'''
 def main():
     # global convertir_pdf_var
     global root
-    root = tk.Tk()
     root.title("GENERA DESIGNES")
     icon_path = resource_path('ico.ico')
     root.iconbitmap(icon_path)
@@ -1869,9 +1698,7 @@ def main():
     # chk_es_skills.pack(pady=5)
     # chk_es_erasmus = tk.Checkbutton(root, text="Es fons ERASMUS", variable=es_erasmus)
     # chk_es_erasmus.pack(pady=5)
-    '''
-    ON PROCESS PRINCIPAL
-    '''
+
   
     def abrir_banner():
         webbrowser.open("https://cefirefp.github.io/docs/apps/baner/proves.html")
@@ -1902,3 +1729,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+'''

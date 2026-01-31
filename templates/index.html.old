@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block title %}Inicio{% endblock %}
+
+{% block content %}
+  <h1 class="mb-4">Pàgina d'inici</h1>
+  <p>Benvingut a l'aplicació.</p>
+  <a href="{{ url_for('login') }}" class="btn btn-primary">Anar a l'inici de sessió</a>
+  <a href="{{ url_for('registro') }}" class="btn btn-secondary">Anar a registre</a>
+{% endblock %}

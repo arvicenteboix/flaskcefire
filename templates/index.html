@@ -3,8 +3,26 @@
 {% block title %}Inicio{% endblock %}
 
 {% block content %}
-  <h1 class="mb-4">Pàgina d'inici</h1>
-  <p>Benvingut a l'aplicació.</p>
-  <a href="{{ url_for('login') }}" class="btn btn-primary">Anar a l'inici de sessió</a>
-  <a href="{{ url_for('registro') }}" class="btn btn-secondary">Anar a registre</a>
+<div class="container-fluid bg-light py-5 mb-5">
+  <div class="container py-5">
+    <div class="row align-items-center min-vh-75">
+      <div class="col-lg-6">
+        <h1 class="display-4 fw-bold mb-4 text-dark">Benvingut a l'aplicació</h1>
+        <p class="lead mb-4">Sistema creat per a facilitar la tasca de les assessories de Formació Professional.</p>
+        <div class="d-flex gap-3 flex-wrap">
+          <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg px-4">Inici de sessió</a>
+          <a href="{{ url_for('registro') }}" class="btn btn-outline-secondary btn-lg px-4">Registrar-se</a>
+        </div>
+      </div>
+      <div class="col-lg-6 text-center">
+        <div class="bg-white shadow-lg rounded-4 p-4" style="max-width: 400px; margin: 0 auto;">
+          <i class="fas fa-graduation-cap display-1 text-primary mb-3"></i>
+          <h3 class="h4 fw-bold text-dark">Formació Professional</h3>
+          <p class="text-muted">Gestió de documentació.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}

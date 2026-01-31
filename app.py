@@ -26,6 +26,16 @@ def enviar_arxiu(buffer, save_path):
         mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     )
 
+
+@app.route("/datosusr")
+def datosusr():
+    if session.get("logged_in"):
+            return f"Usuario: {session.get('username')}, ID: {session.get('user_id'), Nombre: {session.get('nombre')}, Apellidos: {session.get('apellidos')}}"
+    else:
+        return "No estás logueado"
+
+
+
 @app.route("/")
 def inicio():
     # Si ya está logueado, puedes mandarlo directo a /privado si quieres:
@@ -54,6 +64,8 @@ def login():
             session["logged_in"] = True
             session["user_id"] = user["id"]
             session["username"] = user["username"]
+            session["nombre"] = user["nombre"]
+            session["apellidos"] = user["apellidos"]
             return redirect(url_for("privado"))
         else:
             msg = "Usuario o contraseña incorrectos"
@@ -247,6 +259,65 @@ def designes():
             # enviar_arxiu(buffer, path)
     return redirect(url_for("privado"))
 
+# DESIGNES SDGFP 
+
+@app.route("/designessdgfp", methods=["POST"])
+def designessdgfp():
+    if not session.get("logged_in"):
+        return redirect(url_for("login"))
+    if request.method == "POST":
+        archivo = request.files.get("file")
+        if archivo:
+            json_data = crea_designa.process_excel(archivo)
+            datos_identificativos = crea_designa.extraer_datos_identificativos(archivo)
+            # print("Datos identificativos:", datos_identificativos)
+            # buffer, path = crea_designa.on_process(json_data, datos_identificativos, tipo="des")
+
+            result = crea_designa.on_process(json_data, datos_identificativos, tipo="dessdgfp")
+            print("Result from on_process:", result)
+            
+            if result is None:
+                return jsonify({"error": "Procesamiento falló: on_process devolvió None"}), 400
+            # Manejar múltiples archivos devueltos por on_process: crear un ZIP y devolverlo
+            files = list(result)
+            if len(files) == 1:
+                buffer, path = files[0]
+                return send_file(buffer, as_attachment=True, download_name=path)
+
+            tmp_zip = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
+            tmp_zip.close()
+            try:
+                with zipfile.ZipFile(tmp_zip.name, "w", zipfile.ZIP_DEFLATED) as zf:
+                    for buffer, path in files:
+                        # si buffer es una ruta en disco
+                        if isinstance(buffer, str) and os.path.isfile(buffer):
+                            zf.write(buffer, arcname=path)
+                        # si buffer es bytes/bytearray
+                        elif isinstance(buffer, (bytes, bytearray)):
+                            zf.writestr(path, buffer)
+                        # si buffer es file-like
+                        elif hasattr(buffer, "read"):
+                            try:
+                                buffer.seek(0)
+                            except Exception:
+                                pass
+                            zf.writestr(path, buffer.read())
+                        else:
+                            # intentar serializar a bytes como fallback
+                            zf.writestr(path, bytes(buffer))
+                try:
+                    return send_file(tmp_zip.name, as_attachment=True, download_name="designas.zip")
+                except TypeError:
+                    return send_file(tmp_zip.name, as_attachment=True, attachment_filename="designas.zip")
+            finally:
+                # opcional: limpiar el zip tras enviarlo si se desea (no lo hacemos inmediatamente para permitir send_file)
+                pass
+            # return enviar_arxiu(buffer, path)
+            # enviar_arxiu(buffer, path)
+    return redirect(url_for("privado"))
+
+
+
 
 # CERTIFICA
 
@@ -305,6 +376,59 @@ def certifica():
             # return enviar_arxiu(buffer, path)
             # enviar_arxiu(buffer, path)
     return redirect(url_for("privado"))
+
+# CERTIFICA SDGFP
+
+@app.route("/certificasdgfp", methods=["POST"])
+def certificasdgfp():
+    if not session.get("logged_in"):
+        return redirect(url_for("login"))
+    if request.method == "POST":
+        archivo = request.files.get("file")
+        if archivo:
+            json_data = crea_designa.process_excel(archivo)
+            datos_identificativos = crea_designa.extraer_datos_identificativos(archivo)
+
+            result = crea_designa.on_process(json_data, datos_identificativos, tipo="cersdgfp")
+            print("Result from on_process:", result)
+            
+            if result is None:
+                return jsonify({"error": "Procesamiento falló: on_process devolvió None"}), 400
+            files = list(result)
+            if len(files) == 1:
+                buffer, path = files[0]
+                return send_file(buffer, as_attachment=True, download_name=path)
+
+            tmp_zip = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
+            tmp_zip.close()
+            try:
+                with zipfile.ZipFile(tmp_zip.name, "w", zipfile.ZIP_DEFLATED) as zf:
+                    for buffer, path in files:
+                        # si buffer es una ruta en disco
+                        if isinstance(buffer, str) and os.path.isfile(buffer):
+                            zf.write(buffer, arcname=path)
+                        # si buffer es bytes/bytearray
+                        elif isinstance(buffer, (bytes, bytearray)):
+                            zf.writestr(path, buffer)
+                        # si buffer es file-like
+                        elif hasattr(buffer, "read"):
+                            try:
+                                buffer.seek(0)
+                            except Exception:
+                                pass
+                            zf.writestr(path, buffer.read())
+                        else:
+                            # intentar serializar a bytes como fallback
+                            zf.writestr(path, bytes(buffer))
+                try:
+                    return send_file(tmp_zip.name, as_attachment=True, download_name="certificas.zip")
+                except TypeError:
+                    return send_file(tmp_zip.name, as_attachment=True, attachment_filename="certificas.zip")
+            finally:
+                pass
+    return redirect(url_for("privado"))
+
+
 
 
 @app.route("/resolc-dgfp", methods=["POST"])

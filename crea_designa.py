@@ -199,16 +199,12 @@ def process_excel(nombre_archivo):
 
 
 
-def generar_certificas(datos, identificativos, numero_a_letras=lambda x:str(x)):
+def generar_certifica_sdgfp(datos, identificativos, numero_a_letras=lambda x:str(x)):
     doc = Document()
     section = doc.sections[0]
     section.top_margin = Cm(1)
-
-
-
-    imagen_path = resource_path('a.png')
     
-    # imagen_path = "./a.png"
+    imagen_path = "./a.png"
     doc.add_picture(imagen_path, width=Cm(15.0))
 
     estilo = doc.styles['Normal']
@@ -305,34 +301,29 @@ def generar_certificas(datos, identificativos, numero_a_letras=lambda x:str(x)):
 
     save_path = doc_name
     
-    doc.save(save_path)
-    # Convertir a PDF si se desea
-    '''
-    if convertir_pdf_var.get():
-        try:
-            convert("./" + doc_name, stdout=open(os.devnull, 'w'), stderr=open(os.devnull, 'w'))
-        except Exception as e:
-            print(f"Error al convertir a PDF: {e}")
-    '''
-    try:
-        print(f"✅ Se ha creado '{identificativos.get('CÓDIGO EDICIÓN / CODI EDICIÓ', '')}_{datos['Nombre'].replace(' ', '_')}.docx' correctamente.")
-    except Exception:
-        print("Documento generado correctamente")
+    # doc.save(save_path)
+    BufferIO = BytesIO()
+    doc.save(BufferIO)
+    BufferIO.seek(0)
+    return BufferIO, save_path
 
 
 # Generar documento Word
 # datos es un diccionario con 'Nombre', 'DNI' y 'Movimientos' (lista de dicts)
 
-def generar_documento(datos, identificativos, numero_a_letras=lambda x:str(x)):
+def designasdgfp(datos, identificativos, numero_a_letras=lambda x:str(x)):
+
+    print("Generando designa SDGFP para:", datos['Nombre'])
+
     doc = Document()
     section = doc.sections[0]
     section.top_margin = Cm(1)
 
 
 
-    imagen_path = resource_path('a.png')
+    # imagen_path = resource_path('a.png')
     
-    # imagen_path = "./a.png"
+    imagen_path = "./a.png"
     doc.add_picture(imagen_path, width=Cm(15.0))
 
     estilo = doc.styles['Normal']
@@ -442,23 +433,12 @@ def generar_documento(datos, identificativos, numero_a_letras=lambda x:str(x)):
 
     save_path = doc_name
    
-    doc.save(save_path)
-    # Convertir a PDF si se desea
-    '''
-    if convertir_pdf_var.get():
-        try:
-            convert("./" + doc_name, stdout=open(os.devnull, 'w'), stderr=open(os.devnull, 'w'))
-        except Exception as e:
-            print(f"Error al convertir a PDF: {e}")
-    '''
-    try:
-        print(f"✅ Se ha creado '{identificativos.get('CÓDIGO EDICIÓN / CODI EDICIÓ', '')}_{datos['Nombre'].replace(' ', '_')}.docx' correctamente.")
-    except Exception:
-        print("Documento generado correctamente")
+    # doc.save(save_path)
 
-# Ejemplo de uso:
-# for persona in datos_json:  # Si tienes una lista de personas
-#     generar_documento(persona)
+    BufferIO = BytesIO()
+    doc.save(BufferIO)
+    BufferIO.seek(0)
+    return BufferIO, save_path
 
 
 def generar_skills(datos, identificativos, partida, numero_a_letras=lambda x:str(x)):
@@ -1596,8 +1576,8 @@ def on_process(json_data, hoja_excel, tipo, resultados=None, minuta_datos=None):
             if t == "min":
                 Buffer, path = crea_minuta_skills_docx(dades=minuta_datos, identificativos=hoja_excel)
                 return Buffer, path
-            elif t == "resolc" or t == "cer" or t == "des":
-                print("JSON DATA:", json_data)
+            elif t == "resolc" or t == "cer" or t == "des" or t == "dessdgfp" or t == "cersdgfp":
+                # print("JSON DATA:", json_data)
                 for persona in json_data:
                     # Filtrar movimientos que contienen "minuta" en el campo 'MINUTA / DIETA / FACTURA/ MATERIAL'
                     # Solo generar documento si TODOS los movimientos son 'minuta'
@@ -1657,77 +1637,21 @@ def on_process(json_data, hoja_excel, tipo, resultados=None, minuta_datos=None):
                         print (buffer)
                         buffers3.append((buffer, path))
                     return (buffers3)
-                  # Salir después de generar designas si no está seleccionado skills
+                elif t == "dessdgfp":
+                    buffers4 = []
+                    for persona in personas:
+                        buffer, path = designasdgfp(datos=persona, identificativos=hoja_excel)
+                        buffers4.append((buffer, path))
+                    return (buffers4)
+                elif t == "cersdgfp":
+                    buffers5 = []
+                    for persona in personas:
+                        buffer, path = generar_certifica_sdgfp(datos=persona, identificativos=hoja_excel)
+                        buffers5.append((buffer, path))
+                    return (buffers5)
             
         except Exception as e:
             pass
             # status_label.config(text=f"Error: {e}")
             # messagebox.showerror("Error", f"Error processant l'archivo: {e}")
 
-
-'''
-def main():
-    # global convertir_pdf_var
-    global root
-    root.title("GENERA DESIGNES")
-    icon_path = resource_path('ico.ico')
-    root.iconbitmap(icon_path)
-    # Centrar la ventana en la pantalla
-    window_width = 400
-    window_height = 300
-    screen_width = root.winfo_screenwidth()
-    screen_height = root.winfo_screenheight()
-    x = int((screen_width / 2) - (window_width / 2))
-    y = int((screen_height / 2) - (window_height / 2))
-    root.geometry(f"{window_width}x{window_height}+{x}+{y}")
-
-    status_label = tk.Label(root, text="Fes clic per a processar", fg="blue", font=("Arial", 12))
-    status_label.pack(pady=10)
-
-    # convertir_pdf_var = tk.BooleanVar()
-    # chk_convertir_pdf = tk.Checkbutton(root, text="Convertir todos los DOCX a PDF al finalizar", variable=convertir_pdf_var)
-    # chk_convertir_pdf.pack(pady=5)
-    global es_skills
-    es_skills = tk.BooleanVar()
-    global es_erasmus
-    es_erasmus = tk.BooleanVar()
-    es_skills.set(True)
-    es_erasmus.set(False)
-
-    # chk_es_skills = tk.Checkbutton(root, text="Es Skills", variable=es_skills)
-    # chk_es_skills.pack(pady=5)
-    # chk_es_erasmus = tk.Checkbutton(root, text="Es fons ERASMUS", variable=es_erasmus)
-    # chk_es_erasmus.pack(pady=5)
-
-  
-    def abrir_banner():
-        webbrowser.open("https://cefirefp.github.io/docs/apps/baner/proves.html")
-
-    menubar = tk.Menu(root)
-     
-    banner_menu = tk.Menu(menubar, tearoff=0)
-    menubar.add_cascade(label="Banner", menu=banner_menu)
-    banner_menu.add_command(label="Mostrar App Banner", command=lambda: abrir_banner())
-    banner_menu.add_separator()
-    banner_menu.add_command(label="Sortir", command=root.quit)
-    root.config(menu=menubar)
-
-    btn = tk.Button(root, text="Genera Designes", command=lambda: on_process("des"), font=("Arial", 12), width=20)
-    btn2 = tk.Button(root, text="Genera Certifica", command=lambda: on_process("cer"), font=("Arial", 12), width=20)
-    btn3 = tk.Button(root, text="Genera Minuta DGFP", command=lambda: on_process("min", root), font=("Arial", 12), width=20)
-    btn4 = tk.Button(root, text="Genera Resolc DGFP", command=lambda: on_process("resolc", root), font=("Arial", 12), width=20)
-    btn.pack(pady=10)
-    btn2.pack(pady=10)
-    btn3.pack(pady=10)
-    btn4.pack(pady=10)
-
-    version_label = tk.Label(root, text=version, font=("Arial", 10), fg="gray")
-    version_label.place(relx=1.0, rely=1.0, anchor='se', x=-5, y=-5)
-
-
-    root.mainloop()
-
-if __name__ == "__main__":
-    main()
-
-'''

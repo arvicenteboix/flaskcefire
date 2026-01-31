@@ -1,0 +1,180 @@
+<style>
+    #dropzone { border: 2px dashed #6c757d; border-radius: .5rem; padding: 2rem; text-align: center; cursor: pointer; }
+    #dropzone.dragover { background: rgba(0,0,0,0.03); border-color: #0d6efd; }
+    #file-name { margin-top: .5rem; font-weight: 500; }
+  </style>
+
+
+  <div class="modal fade" id="modalCreaDesignesSdgfp" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Crea_Designa per a la SDG de Formació del professorat</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div id="dropzone">
+            Arrastra aquí tu archivo Excel (.xlsx, .xls) o haz clic para seleccionarlo
+            <div id="file-name" class="text-truncate"></div>
+          </div>
+          <input id="fileInput" type="file" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" style="display:none">
+        </div>
+        <div class="modal-footer">
+            <div class="d-flex flex-column gap-2 w-100 align-items-center justify-content-center">
+            <button type="button" id="btnGeneraDesignessdgfp" class="btn btn-secondary btn-lg w-100">Genera Designes</button>
+            <button type="button" id="btnGeneraCertificasdgfp" class="btn btn-secondary btn-lg w-100">Genera Certifica</button>
+            <button type="button" id="btnGeneraMinutaDGFPSdgfp" class="btn btn-secondary btn-lg w-100">Genera Minuta SDGFP</button>
+            
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      let selectedFile = null;
+      let currentAction = null;
+      const dropzone = document.getElementById('dropzone');
+      const fileInput = document.getElementById('fileInput');
+      const fileNameEl = document.getElementById('file-name');
+      const buttons = {
+        designes: document.getElementById('btnGeneraDesignessdgfp'),
+        certifica: document.getElementById('btnGeneraCertificasdgfp'),
+        minuta: document.getElementById('btnGeneraMinutaDGFPSdgfp'),
+      };
+
+      function setFile(file) {
+        if (!file) return;
+        selectedFile = file;
+        fileNameEl.textContent = file.name;
+      }
+
+      // Drag & drop
+      ['dragenter', 'dragover'].forEach(evt =>
+        dropzone.addEventListener(evt, e => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropzone.classList.add('dragover');
+        })
+      );
+      ['dragleave', 'drop', 'dragend'].forEach(evt =>
+        dropzone.addEventListener(evt, e => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropzone.classList.remove('dragover');
+        })
+      );
+      dropzone.addEventListener('drop', e => {
+        const f = e.dataTransfer.files && e.dataTransfer.files[0];
+        if (f) setFile(f);
+      });
+
+      // Click to open file selector
+      dropzone.addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', () => {
+        const f = fileInput.files && fileInput.files[0];
+        if (f) setFile(f);
+      });
+
+      // Upload helper
+      async function uploadFor(action) {
+        if (!selectedFile) {
+          alert('Selecciona un archivo primero.');
+          return;
+        }
+        // Map action to endpoint (ajusta rutas según backend)
+        const endpoints = {
+          designes: '/designessdgfp',
+          certifica: '/certificasdgfp',
+        };
+        const url = endpoints[action];
+        if (!url) return;
+
+        // Disable UI
+        // Object.values(buttons).forEach(b => b.disabled = true);
+        const fd = new FormData();
+        fd.append('file', selectedFile);
+
+        try {
+          // pedir como blob porque el backend puede devolver un fichero
+          
+          const resp = await axios.post(url, fd, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+            responseType: 'blob'
+          });
+
+          const blob = resp.data;
+          const contentType = (resp.headers && resp.headers['content-type']) || '';
+
+          // función para cerrar modal y limpiar UI
+          const cleanAndClose = (msg) => {
+            selectedFile = null;
+            fileInput.value = '';
+            fileNameEl.textContent = '';
+            const modalEl = document.getElementById('modalCreaDesignes');
+            if (modalEl) {
+              const bsModal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+              bsModal.hide();
+            }
+            if (msg) alert(msg);
+          };
+
+          if (contentType.includes('application/json')) {
+            // el servidor devolvió JSON dentro del blob (mensaje de éxito/información)
+            const text = await blob.text();
+            let data;
+            try { data = JSON.parse(text); } catch { data = { message: text }; }
+            // cleanAndClose(data?.message || 'Operación completada');
+          } else {
+            // es un fichero: descargar
+            const cd = (resp.headers && (resp.headers['content-disposition'] || resp.headers['Content-Disposition'])) || '';
+            let filename = 'download';
+            const m = cd.match(/filename\*?=(?:UTF-8'')?["']?([^;"']+)/i);
+            if (m && m[1]) {
+              try { filename = decodeURIComponent(m[1]); } catch { filename = m[1]; }
+            } else if (selectedFile && selectedFile.name) {
+              // sugerir nombre basado en archivo subido
+              const base = selectedFile.name.replace(/\.[^.]+$/, '');
+              filename = base + '_result';
+            }
+
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(blobUrl);
+
+            //cleanAndClose('Fichero descargado');
+          }
+        } catch (err) {
+          // intentar extraer mensaje de error si la respuesta incluye JSON en blob
+          let msg = err?.message || 'Error en la subida';
+          if (err?.response && err.response.data) {
+            try {
+              const errBlob = err.response.data;
+              if (typeof errBlob.text === 'function') {
+          const txt = await errBlob.text();
+          try { msg = JSON.parse(txt)?.message || txt; } catch { msg = txt; }
+              }
+            } catch (e) { /* ignore */ }
+          }
+          alert(msg);
+        } finally {
+          Object.values(buttons).forEach(b => b.disabled = false);
+        }
+      }
+
+
+      async function uploadForMinuta() {
+        alert('La generació de minutes per la SDGFP es crea en Gesform.');
+      }
+      // Button clicks -> set action and upload
+      buttons.designes.addEventListener('click', () => uploadFor('designes'));
+      buttons.certifica.addEventListener('click', () => uploadFor('certifica'));
+      buttons.minuta.addEventListener('click', () => uploadForMinuta());
+    })();
+  </script>

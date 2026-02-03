@@ -461,7 +461,7 @@ def generar_skills(datos, identificativos, partida, numero_a_letras=lambda x:str
     # Encabezado de autoridad
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p.add_run("\nMarta Armendia Santos, directora general de Formació Professional, de la Conselleria d’Educació, Cultura i Universitats\n").bold = True
+    p.add_run("\nDaniel McEvoy Bravo, Secretari Autonòmic d'Educació, Cultura i Universitats\n").bold = True
 
     # RESOLUCIÓN
     p_resolc = doc.add_paragraph()
@@ -666,7 +666,7 @@ def generar_skills(datos, identificativos, partida, numero_a_letras=lambda x:str
 
     p_firma = doc.add_paragraph()
     p_firma.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p_firma.add_run("Marta Armendia Santos\nDirectora General de Formació Professional, de la Conselleria d’Educació, Cultura i Universitats")
+    p_firma.add_run("Daniel McEvoy Bravo\nSecretari Autonòmic d'Educació, Cultura i Universitats").bold = True
 
     # Nombre de archivo y guardado
     doc_name = f"{codigo}_DESIGNA_{datos['Nombre'].replace(' ', '_')}.docx"
@@ -700,7 +700,7 @@ def generar_skills_resolc(datos, identificativos, partida, fecha, centre_educati
     # Encabezado de autoridad
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p.add_run("\nMARTA ARMENDIA SANTOS, DIRECTORA GENERAL DE FORMACIÓ PROFESSIONAL\n")
+    p.add_run("\nDaniel McEvoy Bravo, Secretari Autonòmic d'Educació, Cultura i Universitats\n").bold = True
 
     # 1. Designación del personal docente
     curso = identificativos.get('TÍTULO ACCIÓN FORMATIVA / TÍTOL ACCIÓ FORMATIVA', '')
@@ -931,7 +931,7 @@ def generar_skills_resolc(datos, identificativos, partida, fecha, centre_educati
 
     p_firma = doc.add_paragraph()
     p_firma.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p_firma.add_run("Marta Armendia Santos\nDirectora General de Formació Professional")
+    p_firma.add_run("Daniel McEvoy Bravo\nDirectora General de Formació Professional")
 
     # Nombre de archivo y guardado
     doc_name = f"{codigo}_RESOLC_{datos['Nombre'].replace(' ', '_')}.docx"

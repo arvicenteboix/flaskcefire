@@ -27,14 +27,6 @@ def enviar_arxiu(buffer, save_path):
     )
 
 
-@app.route("/datosusr")
-def datosusr():
-    if session.get("logged_in"):
-            return f"Usuario: {session.get('username')}, ID: {session.get('user_id'), Nombre: {session.get('nombre')}, Apellidos: {session.get('apellidos')}}"
-    else:
-        return "No estás logueado"
-
-
 
 @app.route("/")
 def inicio():
@@ -115,7 +107,8 @@ def register():
         cursor.execute("SELECT id FROM users WHERE username = ? OR email = ?", (username, email))
         if cursor.fetchone():
             msg = "Usuari o email ja registrat"
-            return render_template("login.html", msg=msg)
+            render_template("login.html", msg=msg)
+            return redirect(url_for("login"))
 
         cursor.execute(
             "INSERT INTO users (username, password, nombre, apellidos, email) VALUES (?, ?, ?, ?, ?)",
@@ -123,8 +116,9 @@ def register():
         )
         conn.commit()
         msg = "Usuari creat, ja pots iniciar sessió"
-        #return redirect(url_for("login"))
-    return render_template("login.html", msg=msg)
+        render_template("login.html", msg=msg)
+        return redirect(url_for("login"))
+    return redirect(url_for("login"))
 
 @app.route("/upload_excel", methods=["GET", "POST"])
 def upload_excel():

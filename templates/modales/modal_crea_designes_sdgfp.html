@@ -1,6 +1,6 @@
 <style>
-    #dropzone { border: 2px dashed #6c757d; border-radius: .5rem; padding: 2rem; text-align: center; cursor: pointer; }
-    #dropzone.dragover { background: rgba(0,0,0,0.03); border-color: #0d6efd; }
+    #dropzone2 { border: 2px dashed #6c757d; border-radius: .5rem; padding: 2rem; text-align: center; cursor: pointer; }
+    #dropzone2.dragover { background: rgba(0,0,0,0.03); border-color: #0d6efd; }
     #file-name { margin-top: .5rem; font-weight: 500; }
   </style>
 
@@ -13,11 +13,11 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
         <div class="modal-body">
-          <div id="dropzone">
+          <div id="dropzone2">
             Arrastra aquí tu archivo Excel (.xlsx, .xls) o haz clic para seleccionarlo
-            <div id="file-name" class="text-truncate"></div>
+            <div id="file-name2" class="text-truncate"></div>
           </div>
-          <input id="fileInput" type="file" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" style="display:none">
+          <input id="fileInput2" type="file" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" style="display:none">
         </div>
         <div class="modal-footer">
             <div class="d-flex flex-column gap-2 w-100 align-items-center justify-content-center">
@@ -35,9 +35,9 @@
     (() => {
       let selectedFile = null;
       let currentAction = null;
-      const dropzone = document.getElementById('dropzone');
-      const fileInput = document.getElementById('fileInput');
-      const fileNameEl = document.getElementById('file-name');
+      const dropzone2 = document.getElementById('dropzone2');
+      const fileInput2 = document.getElementById('fileInput2');
+      const fileNameEl2 = document.getElementById('file-name2');
       const buttons = {
         designes: document.getElementById('btnGeneraDesignessdgfp'),
         certifica: document.getElementById('btnGeneraCertificasdgfp'),
@@ -47,33 +47,33 @@
       function setFile(file) {
         if (!file) return;
         selectedFile = file;
-        fileNameEl.textContent = file.name;
+        fileNameEl2.textContent = file.name;
       }
 
       // Drag & drop
       ['dragenter', 'dragover'].forEach(evt =>
-        dropzone.addEventListener(evt, e => {
+        dropzone2.addEventListener(evt, e => {
           e.preventDefault();
           e.stopPropagation();
-          dropzone.classList.add('dragover');
+          dropzone2.classList.add('dragover');
         })
       );
       ['dragleave', 'drop', 'dragend'].forEach(evt =>
-        dropzone.addEventListener(evt, e => {
+        dropzone2.addEventListener(evt, e => {
           e.preventDefault();
           e.stopPropagation();
-          dropzone.classList.remove('dragover');
+          dropzone2.classList.remove('dragover');
         })
       );
-      dropzone.addEventListener('drop', e => {
+      dropzone2.addEventListener('drop', e => {
         const f = e.dataTransfer.files && e.dataTransfer.files[0];
         if (f) setFile(f);
       });
 
       // Click to open file selector
-      dropzone.addEventListener('click', () => fileInput.click());
-      fileInput.addEventListener('change', () => {
-        const f = fileInput.files && fileInput.files[0];
+      dropzone2.addEventListener('click', () => fileInput2.click());
+      fileInput2.addEventListener('change', () => {
+        const f = fileInput2.files && fileInput2.files[0];
         if (f) setFile(f);
       });
 

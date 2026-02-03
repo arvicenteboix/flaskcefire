@@ -114,17 +114,17 @@ def register():
         # comprobar si usuario o email ya existen
         cursor.execute("SELECT id FROM users WHERE username = ? OR email = ?", (username, email))
         if cursor.fetchone():
-            msg = "Usuario o email ya registrado"
-            return render_template("registro.html", msg=msg)
+            msg = "Usuari o email ja registrat"
+            return render_template("login.html", msg=msg)
 
         cursor.execute(
             "INSERT INTO users (username, password, nombre, apellidos, email) VALUES (?, ?, ?, ?, ?)",
             (username, password, nombre, apellidos, email),
         )
         conn.commit()
-        msg = "Usuario creado, ya puedes iniciar sesión"
+        msg = "Usuari creat, ja pots iniciar sessió"
         #return redirect(url_for("login"))
-    return render_template("registro.html", msg=msg)
+    return render_template("login.html", msg=msg)
 
 @app.route("/upload_excel", methods=["GET", "POST"])
 def upload_excel():

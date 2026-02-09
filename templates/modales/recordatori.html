@@ -1,0 +1,182 @@
+<div class="modal fade" id="recordatoriModal" tabindex="-1" aria-labelledby="recordatoriModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="recordatoriModalLabel">Recordatori</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="recordatoriForm">
+                    <div class="alert alert-danger" role="alert">
+                        Es tracta d'una ferramenta en estat experimiental. De moment està en fase de proves, Així que
+                        pot ser que no funcione del tot bé. Si vols provar-la, fes-ho i si tens qualsevol dubte o
+                        suggeriment, no dubtes en contactar amb mi.
+                    </div>
+                    <div class="mb-3">
+                        El teu correu electrònic és <strong>{{ session.get('email') }}</strong> on se t'enviarà el
+                        recordatori de cada data en els dies senyalats. Pots canviar el correu al perfil si desitges. Si
+                        emplenes esta part també s'enviarà un correu a David el dia d'inici de l'inscripció per a que el
+                        publique en Instagram, de manera que no cal que ho faces tú. Recorda tenir a la carpeta
+                        corresponent el text i les imatges que vols que apareguen en el post d'Instagram.
+                    </div>
+                    <!-- Drag & Drop Excel -->
+                    <div class="mb-3">
+                        <div class="border border-2 border-dashed p-4 text-center" id="dropZone"
+                            style="cursor: pointer; background-color: #f8f9fa;">
+                            <i class="bi bi-cloud-arrow-up"></i>
+                            <p class="mb-0">Arrossega l'arxiu Excel aquí o fes clic per seleccionar</p>
+                            <input type="file" id="excelFile" accept=".xlsx,.xls" style="display: none;">
+                        </div>
+                        <small class="text-muted d-block mt-2" id="fileName"></small>
+                    </div>
+
+                    <!-- Data Inici -->
+                    <div class="mb-3 row">
+                        <div class="col-md-12 d-flex align-items-center text-start gap-2 mb-3">
+                            <label for="titulo" class="form-label mb-0 col-1" style="white-space: nowrap;">Títol</label>
+                            <input type="text" class="form-control col" id="titulo" name="titulo" required>
+                        </div>
+
+                        <div class="col-md-12 d-flex align-items-center text-start gap-2 mb-3">
+                            <label for="codi" class="form-label mb-0 col-1" style="white-space: nowrap;">Codi</label>
+                            <input type="text" class="form-control col" id="codi" name="codi" required>
+                        </div>
+
+                        <div class="col-md-6 d-flex align-items-center text-start gap-2">
+                            <label for="dataInici" class="form-label mb-0 col" style="white-space: nowrap;">Data
+                                Inici</label>
+                            <input type="date" class="form-control col" id="dataInici" name="dataInici" required>
+                        </div>
+
+                        <!-- Data Fi -->
+                        <div class="col-md-6 d-flex align-items-center text-start gap-2">
+                            <label for="dataFi" class="form-label mb-0 col" style="white-space: nowrap;">Data
+                                Fi</label>
+                            <input type="date" class="form-control col" id="dataFi" name="dataFi" required>
+                        </div>
+                    </div>
+
+                    <!-- Data Inscripció -->
+                    <div class="mb-3 row">
+                        <div class="col-md-6 d-flex align-items-center text-start gap-2">
+                            <label for="dataInscripcio" class="form-label mb-0 col" style="white-space: nowrap;">Data
+                                Inscripció</label>
+                            <input type="date" class="form-control col" id="dataInscripcio" name="dataInscripcio"
+                                required>
+                        </div>
+
+                        <!-- Data Confirmació -->
+                        <div class="col-md-6 d-flex align-items-center text-start gap-2">
+                            <label for="dataConfirmacio" class="form-label mb-0 col" style="white-space: nowrap;">Data
+                                Confirmació</label>
+                            <input type="date" class="form-control col" id="dataConfirmacio" name="dataConfirmacio"
+                                required>
+                        </div>
+                    </div>
+
+                    <!-- Data Llistes Definitives -->
+                    <div class="mb-3 row">
+                        <div class="col-md-6 d-flex align-items-center text-start gap-2">
+                            <label for="dataLlistes" class="form-label mb-0 col" style="white-space: nowrap;">Llistes
+                                Definitives</label>
+                            <input type="date" class="form-control col" id="dataLlistes" name="dataLlistes" required>
+                        </div>
+                    </div>
+            </div>
+            </form>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tancar</button>
+                <button type="button" class="btn btn-primary" id="guardarBtn">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const dropZone = document.getElementById('dropZone');
+    const excelFile = document.getElementById('excelFile');
+    const fileName = document.getElementById('fileName');
+
+    dropZone.addEventListener('click', () => excelFile.click());
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('bg-success');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('bg-success'));
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('bg-success');
+        excelFile.files = e.dataTransfer.files;
+        updateFileName();
+    });
+
+    excelFile.addEventListener('change', updateFileName);
+
+    function data(str) {
+        const [day, month, year] = str.split('/');
+        const fullYear = year.length === 2 ? '20' + year : year;
+        return `${fullYear}-${month}-${day}`;
+    }
+
+    function updateFileName() {
+        if (excelFile.files.length > 0) {
+            const file = excelFile.files[0];
+            fileName.textContent = `Arxiu seleccionat: ${file.name}`;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            axios.post('/exceldates', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            })
+                .then(response => {
+                    console.log('Dates extracted:', response.data);
+                    document.getElementById('titulo').value = response.data.titulo_accion || '';
+                    document.getElementById('codi').value = response.data.codigo_edicion || '';
+                    document.getElementById('dataInici').value = data(response.data.fecha_inicio) || '';
+                    document.getElementById('dataFi').value = data(response.data.fecha_fin) || '';
+                })
+                .catch(error => console.error('Error uploading file:', error));
+        } else {
+            fileName.textContent = '';
+        }
+    }
+
+    document.getElementById('guardarBtn').addEventListener('click', () => {
+        /*
+        // Aquí afegir la lògica per guardar
+        const formData = new FormData(document.getElementById('recordatoriForm'));
+        // Convert date inputs to the expected format (dd/mm/yyyy)
+        const dates = ['dataInici', 'dataFi', 'dataInscripcio', 'dataConfirmacio', 'dataLlistes'];
+        dates.forEach(dateId => {
+            const dateInput = document.getElementById(dateId);
+            if (dateInput.value) {
+                const [year, month, day] = dateInput.value.split('-');
+                formData.set(dateId, `${day}/${month}/${year}`);
+            }
+        });
+        */
+        // Validate that all required fields are filled
+        const form = document.getElementById('recordatoriForm');
+        const requiredInputs = form.querySelectorAll('input[required]');
+        const allFilled = Array.from(requiredInputs).every(input => input.value.trim() !== '');
+
+        if (!allFilled) {
+            alert('Completa tots els camps obligatoris.');
+            return;
+        }
+
+        const formData = new FormData(form);
+
+        axios.post('/recordatoridates', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        })
+            .then(response => {
+                console.log('Recordatori guardado:', response.data);
+                alert(response.data.message || 'Recordatori guardat correctament!');
+                //bootstrap.Modal.getInstance(document.getElementById('recordatoriModal')).hide();
+
+            })
+            .catch(error => console.error('Error saving recordatori:', error));
+    });
+</script>

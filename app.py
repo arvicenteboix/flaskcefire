@@ -7,16 +7,34 @@ import zipfile, tempfile, os
 from flask import send_file
 import crea_designa
 import json
-
+import correu
 
 app = Flask(__name__)
-
-app.secret_key = "dgfp123"
 
 # Usar SQLite en lugar de MySQL
 db_path = os.path.join(os.path.dirname(__file__), "miapp.db")
 conn = sqlite3.connect(db_path, check_same_thread=False)
 conn.row_factory = sqlite3.Row
+
+control = conn.cursor().execute("select * from control").fetchone()
+
+print (control['apimail'])
+
+# Configuración de Mail (definida en correo.py)
+
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'valenciacefire@gmail.com'  # tu correo
+app.config['MAIL_PASSWORD'] = control['apimail']  # tu contraseña o app password    
+app.config['MAIL_DEFAULT_SENDER'] = 'valenciacefire@gmail.com'
+
+# Inicializar Mail y scheduler definidos en correo.py
+mail, scheduler = correu.init_mail_and_scheduler(app, conn)
+
+app.secret_key = "dgfp123"
+
+
 
 def enviar_arxiu(buffer, save_path):
     return send_file(
@@ -58,6 +76,7 @@ def login():
             session["username"] = user["username"]
             session["nombre"] = user["nombre"]
             session["apellidos"] = user["apellidos"]
+            session["email"] = user["email"]
             return redirect(url_for("privado"))
         else:
             msg = "Usuario o contraseña incorrectos"
@@ -686,6 +705,68 @@ def perfil():
         return jsonify(perfil_data)
     else:
         return jsonify({"error": "Usuario no encontrado"}), 404
+    
+
+@app.route("/exceldates", methods=["POST"])
+def exceldates():
+    # Aquí va la lógica para manejar la subida y procesamiento del archivo Excel
+    if request.method == "POST":
+        archivo = request.files.get("file")
+        if archivo:
+            json_data = crea_designa.process_excel(archivo)
+            datos_identificativos = crea_designa.extraer_datos_identificativos(archivo)
+        print("Datos identificativos:", datos_identificativos)
+        resultado = {
+            "codigo_edicion": datos_identificativos.get('CÓDIGO EDICIÓN / CODI EDICIÓ'),
+            "titulo_accion": datos_identificativos.get('TÍTULO ACCIÓN FORMATIVA / TÍTOL ACCIÓ FORMATIVA'),
+            "fecha_inicio": datos_identificativos.get('FECHAS REALIZACIÓN / DATES REALITZACIÓ', '').split(' al ')[0] if ' al ' in datos_identificativos.get('FECHAS REALIZACIÓN / DATES REALITZACIÓ', '') else '',
+            "fecha_fin": datos_identificativos.get('FECHAS REALIZACIÓN / DATES REALITZACIÓ', '').split(' al ')[1] if ' al ' in datos_identificativos.get('FECHAS REALIZACIÓN / DATES REALITZACIÓ', '') else ''
+        }
+    return jsonify(resultado)
+
+@app.route("/recordatoridates", methods=["POST"])
+def recordatoridates():
+    if not session.get("logged_in"):
+        return redirect(url_for("login"))
+    
+    if request.method == "POST":
+        data = request.get_json() if request.is_json else request.form
+        
+        cursor = conn.cursor()
+        cursor.execute(
+            """CREATE TABLE IF NOT EXISTS formacio (
+                asesoria INTEGER,
+                codi_ed TEXT,
+                titol TEXT,
+                data_ini DATE,
+                data_fin DATE,
+                data_insc DATE,
+                data_conf DATE,
+                data_list DATE
+            )"""
+        )
+        conn.commit()
+        print(data.get("codi"), data.get("titulo"), data.get("dataInici"), data.get("dataFi"), data.get("dataInscripcio"), data.get("dataConfirmacio"), data.get("dataLlistes"))
+        try:
+            cursor.execute(
+                """INSERT OR REPLACE INTO formacio 
+                    (asesoria, codi_ed, titol, data_ini, data_fin, data_insc, data_conf, data_list)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    session.get("user_id"),
+                    data.get("codi"),
+                    data.get("titulo"),
+                    data.get("dataInici"),
+                    data.get("dataFi"),
+                    data.get("dataInscripcio"),
+                    data.get("dataConfirmacio"),
+                    data.get("dataLlistes")
+                )
+            )
+            conn.commit()
+            return jsonify({"success": True, "message": "Recordatori guardat"}), 200
+        except sqlite3.Error as e:
+            return jsonify({"error": str(e)}), 400
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=80, debug=False)

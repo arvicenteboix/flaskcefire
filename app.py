@@ -656,6 +656,7 @@ def actualizaperfil():
         apellidos = data.get("apellidos")
         email = data.get("email")
         password = data.get("password", "")
+        api_key = data.get("api_key", "")
 
         # opcional: aceptar "usuario" o "username" si hace falta
         username = data.get("usuario") or data.get("username")
@@ -664,8 +665,8 @@ def actualizaperfil():
         if password == "":
             try:
                 cursor.execute(
-                    "UPDATE users SET nombre = ?, apellidos = ?, email = ? WHERE id = ?",
-                    (nombre, apellidos, email, user_id),
+                    "UPDATE users SET nombre = ?, apellidos = ?, email = ?, api_key = ? WHERE id = ?",
+                    (nombre, apellidos, email, api_key, user_id),
                 )
                 conn.commit()
             except sqlite3.IntegrityError as e:
@@ -674,8 +675,8 @@ def actualizaperfil():
             password = generate_password_hash(password)
             try:
                 cursor.execute(
-                    "UPDATE users SET nombre = ?, apellidos = ?, email = ?, password = ? WHERE id = ?",
-                    (nombre, apellidos, email, password, user_id),
+                    "UPDATE users SET nombre = ?, apellidos = ?, email = ?, password = ?, api_key = ? WHERE id = ?",
+                    (nombre, apellidos, email, password, api_key, user_id),
                 )
                 conn.commit()
             except sqlite3.IntegrityError as e:
@@ -701,6 +702,7 @@ def perfil():
             "nombre": user["nombre"],
             "apellidos": user["apellidos"],
             "email": user["email"],
+            "api_key": user["api_key"]
         }
         return jsonify(perfil_data)
     else:

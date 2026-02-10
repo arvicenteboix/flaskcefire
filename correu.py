@@ -2,7 +2,6 @@ from flask import Flask
 from flask_mail import Mail, Message
 from apscheduler.schedulers.background import BackgroundScheduler
 import atexit
-import smtplib
 from datetime import datetime
 
 
@@ -97,8 +96,8 @@ def init_mail_and_scheduler(app, conn):
     # Inicialitzar Mail amb la configuració de app
     mail.init_app(app)
     # Configurar scheduler
-    # scheduler.add_job(func=lambda: enviar_correus(conn), trigger='cron', hour=4, minute=0)
-    scheduler.add_job(func=lambda: enviar_correus(app, conn), trigger='interval', seconds=10)  # Per a proves, envia cada minut
+    scheduler.add_job(func=lambda: enviar_correus(app, conn), trigger='cron', hour=4, minute=0)
+    # scheduler.add_job(func=lambda: enviar_correus(app, conn), trigger='interval', seconds=10)  # Per a proves, envia cada minut
     scheduler.start()
     # Aturar scheduler quan es tanque l'app
     atexit.register(lambda: scheduler.shutdown(wait=False))

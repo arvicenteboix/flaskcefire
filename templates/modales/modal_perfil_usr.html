@@ -12,7 +12,7 @@
 
                     <div class="mb-3">
                         <label for="perfil_usuario" class="form-label">Usuari</label>
-                        <input type="text" class="form-control" id="perfil_usuario" name="usuario" disabled/>
+                        <input type="text" class="form-control" id="perfil_usuario" name="usuario" disabled />
                     </div>
 
                     <div class="mb-3">
@@ -32,12 +32,19 @@
                     </div>
 
                     <div class="mb-3">
+                        <label for="perfil_api_key" class="form-label">Clau API</label>
+                        <input type="text" class="form-control" id="perfil_api_key" name="api_key"
+                            placeholder="API de Google AI Studio" />
+                    </div>
+
+                    <div class="mb-3">
                         <label for="perfil_password" class="form-label">Contrasenya (nou)</label>
-                        <input type="password" class="form-control" id="perfil_password" name="password" placeholder="Deixa buit per no canviar" />
+                        <input type="password" class="form-control" id="perfil_password" name="password"
+                            placeholder="Deixa buit per no canviar" />
                     </div>
 
                     {% if csrf_token %}
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     {% endif %}
                 </div>
 
@@ -51,75 +58,77 @@
 </div>
 
 <script>
-(function(){
-    function ensureAxios(cb){
-        if(window.axios) return cb();
-        var s = document.createElement('script');
-        s.src = 'https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js';
-        s.onload = cb;
-        document.head.appendChild(s);
-    }
+    (function () {
+        function ensureAxios(cb) {
+            if (window.axios) return cb();
+            var s = document.createElement('script');
+            s.src = 'https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js';
+            s.onload = cb;
+            document.head.appendChild(s);
+        }
 
-    function showAlert(type, msg){
-        var a = document.getElementById('perfil_alert');
-        a.className = 'alert';
-        a.classList.add(type === 'success' ? 'alert-success' : 'alert-danger');
-        a.textContent = msg;
-        a.classList.remove('d-none');
-    }
+        function showAlert(type, msg) {
+            var a = document.getElementById('perfil_alert');
+            a.className = 'alert';
+            a.classList.add(type === 'success' ? 'alert-success' : 'alert-danger');
+            a.textContent = msg;
+            a.classList.remove('d-none');
+        }
 
-    ensureAxios(function(){
-        var modal = document.getElementById('modalPerfilUsr');
-        if(!modal) return;
+        ensureAxios(function () {
+            var modal = document.getElementById('modalPerfilUsr');
+            if (!modal) return;
 
-        modal.addEventListener('show.bs.modal', function(){
-            // carregar dades de /perfil
-            axios.get('/perfil')
-                .then(function(res){
-                    var d = res.data || {};
-                    document.getElementById('perfil_nombre').value = d.nombre || '';
-                    document.getElementById('perfil_apellidos').value = d.apellidos || '';
-                    document.getElementById('perfil_usuario').value = d.usuario || '';
-                    document.getElementById('perfil_email').value = d.email || '';
-                    //document.getElementById('perfil_password').value = '';
-                    var a = document.getElementById('perfil_alert');
-                    a.classList.add('d-none');
-                })
-                .catch(function(err){
-                    showAlert('error', 'No s\'han pogut carregar les dades.');
-                });
+            modal.addEventListener('show.bs.modal', function () {
+                // carregar dades de /perfil
+                axios.get('/perfil')
+                    .then(function (res) {
+                        var d = res.data || {};
+                        document.getElementById('perfil_nombre').value = d.nombre || '';
+                        document.getElementById('perfil_apellidos').value = d.apellidos || '';
+                        document.getElementById('perfil_usuario').value = d.usuario || '';
+                        document.getElementById('perfil_email').value = d.email || '';
+                        document.getElementById('perfil_api_key').value = d.api_key || '';
+                        //document.getElementById('perfil_password').value = '';
+                        var a = document.getElementById('perfil_alert');
+                        a.classList.add('d-none');
+                    })
+                    .catch(function (err) {
+                        showAlert('error', 'No s\'han pogut carregar les dades.');
+                    });
+            });
+
+            document.getElementById('formPerfilUsr').addEventListener('submit', function (e) {
+                e.preventDefault();
+                var payload = {
+                    "nombre": document.getElementById('perfil_nombre').value,
+                    "apellidos": document.getElementById('perfil_apellidos').value,
+                    "usuario": document.getElementById('perfil_usuario').value,
+                    "email": document.getElementById('perfil_email').value,
+                    "password": document.getElementById('perfil_password').value,
+                    "api_key": document.getElementById('perfil_api_key').value
+                };
+
+                // incloure csrf si existeix al DOM
+                var csrfInput = document.querySelector('input[name="csrf_token"]');
+                var headers = { 'Content-Type': 'application/json' };
+                if (csrfInput) headers['X-CSRFToken'] = csrfInput.value;
+
+                axios.post('/actualizaperfil', payload, { headers: headers })
+                    .then(function (res) {
+                        showAlert('success', (res.data && res.data.message) ? res.data.message : 'Dades actualitzades.');
+                        // opcional: tancar modal després d'uns instants
+                        //setTimeout(function(){
+                        //   var modalEl = bootstrap.Modal.getInstance(modal);
+                        //   if(modalEl) modalEl.hide();
+                        //}, 900);
+                    })
+                    .catch(function (err) {
+                        var msg = 'Error en actualitzar les dades.';
+                        if (err.response && err.response.data && err.response.data.message) msg = err.response.data.message;
+                        showAlert('error', msg);
+                    });
+            });
         });
-
-        document.getElementById('formPerfilUsr').addEventListener('submit', function(e){
-            e.preventDefault();
-            var payload = {
-                "nombre": document.getElementById('perfil_nombre').value,
-                "apellidos": document.getElementById('perfil_apellidos').value,
-                "usuario": document.getElementById('perfil_usuario').value,
-                "email": document.getElementById('perfil_email').value,
-                "password": document.getElementById('perfil_password').value
-            };
-
-            // incloure csrf si existeix al DOM
-            var csrfInput = document.querySelector('input[name="csrf_token"]');
-            var headers = { 'Content-Type': 'application/json' };
-            if(csrfInput) headers['X-CSRFToken'] = csrfInput.value;
-
-            axios.post('/actualizaperfil', payload, { headers: headers })
-                .then(function(res){
-                    showAlert('success', (res.data && res.data.message) ? res.data.message : 'Dades actualitzades.');
-                    // opcional: tancar modal després d'uns instants
-                    //setTimeout(function(){
-                     //   var modalEl = bootstrap.Modal.getInstance(modal);
-                     //   if(modalEl) modalEl.hide();
-                    //}, 900);
-                })
-                .catch(function(err){
-                    var msg = 'Error en actualitzar les dades.';
-                    if(err.response && err.response.data && err.response.data.message) msg = err.response.data.message;
-                    showAlert('error', msg);
-                });
-        });
-    });
-})();
+    })();
 </script>

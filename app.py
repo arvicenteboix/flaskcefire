@@ -18,8 +18,6 @@ conn.row_factory = sqlite3.Row
 
 control = conn.cursor().execute("select * from control").fetchone()
 
-print (control['apimail'])
-
 # Configuración de Mail (definida en correo.py)
 
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'

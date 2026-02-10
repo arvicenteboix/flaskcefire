@@ -37,7 +37,7 @@ def enviar_correus(app, conn):
             )
             mail.send(msg)
 
-
+    '''''
     print(datetime.now(), "Enviant correus...")
     cursor = conn.cursor()
     cursor.execute("SELECT id, username, nombre, email FROM users")
@@ -64,8 +64,7 @@ def enviar_correus(app, conn):
     listados = cursor.fetchall()
     if len(listados) > 0:
         envia(listados, "Llistat definitiu")
-
-
+'''
 def init_mail_and_scheduler(app, conn):
     """Inicialitza Mail i el scheduler amb l'app de Flask."""
     global mail, scheduler
@@ -74,7 +73,7 @@ def init_mail_and_scheduler(app, conn):
     # Inicialitzar Mail amb la configuració de app
     mail.init_app(app)
     # Configurar scheduler
-    scheduler.add_job(func=lambda: enviar_correus(app, conn), trigger='cron', hour=1, minute=0)
+    scheduler.add_job(func=lambda: enviar_correus(app, conn), trigger='cron', hour=2, minute=0)
     # scheduler.add_job(func=lambda: enviar_correus(app, conn), trigger='interval', seconds=10)  # Per a proves, envia cada minut
     scheduler.start()
     # Aturar scheduler quan es tanque l'app

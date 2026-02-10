@@ -19,7 +19,7 @@ def enviar_correus(app, conn):
                     subject=f'Recordatori: {formacion["titol"]} - {tipo}',
                     sender='valenciacefire@gmail.com',
                     recipients=[usuari['email']],
-                    body=f"Hola {usuari['nombre']},\n\nEt recordem la formació demà estarà en estat: {formacion['titol']} - Està en estat: {tipo}.\n\nSalutacions,"
+                    body=f"Hola {usuari['nombre']},\n\nEt recordem la formació: {formacion['codigo']} - {formacion['titol']} - demà estarà en estat: {tipo}.\n\nSalutacions,"
                 )
                 mail.send(msg)
 
@@ -27,7 +27,7 @@ def enviar_correus(app, conn):
         with app.app_context():
             body = "Formacions que entren en inscripció demà:\n\n"
             for formacion in datos:
-                body += f"Formació: {formacion['titol']} - Data Inscripció: {formacion['data_insc']}\n"
+                body += f"Formació: {formacion['codigo']} - {formacion['titol']} - Data Inscripció: {formacion['data_insc']}\n"
 
             msg = Message(
                 subject='Recordatori: Formacions en inscripció demà',

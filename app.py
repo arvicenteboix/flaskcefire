@@ -25,14 +25,14 @@ print (control['apimail'])
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'valenciacefire@gmail.com'  # tu correo
+app.config['MAIL_USERNAME'] = control['username']  # tu correo
 app.config['MAIL_PASSWORD'] = control['apimail']  # tu contraseña o app password    
-app.config['MAIL_DEFAULT_SENDER'] = 'valenciacefire@gmail.com'
+app.config['MAIL_DEFAULT_SENDER'] = control['email']
 
 # Inicializar Mail y scheduler definidos en correo.py
 mail, scheduler = correu.init_mail_and_scheduler(app, conn)
 
-app.secret_key = "dgfp123"
+app.secret_key = control['appsecret']  # Cambia esto por una clave secreta segura en producción
 
 
 

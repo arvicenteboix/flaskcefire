@@ -61,32 +61,6 @@ def enviar_correus(app, conn):
     listados = cursor.fetchall()
     envia(listados, "Llistat definitiu")
 
-    
-
-
-
-
-
-
-
-
-    '''
-    cursor.execute("SELECT email FROM users where id=1")
-    EMAIL_LIST = [row['email'] for row in cursor.fetchall()]
-    print(f"Enviant correus a: {EMAIL_LIST}")
-
-    with app.app_context():
-        for email in EMAIL_LIST:
-            msg = Message(
-                subject='Recordatori',
-                sender='valenciacefire@gmail.com',
-                recipients=[email],
-                body='Et recorde aquest correu, prova 2'
-            )
-            mail.send(msg)
-            print(f"Correu enviat a {email}")
-    '''
-
 
 def init_mail_and_scheduler(app, conn):
     """Inicialitza Mail i el scheduler amb l'app de Flask."""

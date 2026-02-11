@@ -1629,7 +1629,7 @@ def on_process(json_data, hoja_excel, tipo, resultados=None, minuta_datos=None):
                         print ("CARREC:", carrec)
                         fecha_obj = datetime.strptime(fecha, "%Y-%m-%d")  # ajusta el formato de entrada
                         formato_deseado = fecha_obj.strftime("%d/%m/%Y")
-                        buffer, path = generar_skills_resolc(datos=persona, identificativos=hoja_excel, fecha=formato_deseado,  centre_educatiu=centre_educatiu, carrec=carrec,partida="G01090205GE00000.422C00.22699 fons OT23000000")
+                        buffer, path = generar_skills_resolc(datos=persona, identificativos=hoja_excel, fecha=formato_deseado,  centre_educatiu=centre_educatiu, carrec=carrec,partida="G01090205GE00000.422C00.22699 fons TE22000053")
                         print (path)
                         print (buffer)
                         buffers3.append((buffer, path))

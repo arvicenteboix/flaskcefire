@@ -514,11 +514,11 @@ def generar_skills(datos, identificativos, partida, numero_a_letras=lambda x:str
         elif "online" in modalidad_lower or "on line" in modalidad_lower or "en línia" in modalidad_lower:
             modalidad_text = f"en línia"
         else:
-            modalidad_text = f"de forma presencial"
+            modalidad_text = f"presencial"
         designa_text = (
             f"1. Designar a les persones que a continuació es relaciona com a formadors, "
             f"per a formar part de l’equip que impartirà la formació {codigo} - {curso}, "
-            f"{modalidad_text} del {fechas}."
+            f"realitzat amb format {modalidad_text} del {fechas}."
         )
 
     doc.add_paragraph(designa_text)

@@ -485,8 +485,10 @@ def generar_skills(datos, identificativos, partida, numero_a_letras=lambda x:str
     if juridico == "funcionario gva":
         # Si modalidad contiene "online" o "on line" (ignorando mayúsculas/minúsculas), poner "de forma online", si no, poner "presencial a"
         modalidad_lower = modalidad.lower()
-        if "online" in modalidad_lower or "on line" in modalidad_lower or "semipresencial" in modalidad_lower:
+        if "semipresencial" in modalidad_lower:
             modalidad_text = f"de forma {modalidad_lower}"
+        elif "online" in modalidad_lower or "on line" in modalidad_lower or "en línia" in modalidad_lower:
+            modalidad_text = f"en línia"
         else:
             modalidad_text = f"presencial"
         designa_text = (
@@ -507,8 +509,10 @@ def generar_skills(datos, identificativos, partida, numero_a_letras=lambda x:str
         # Si no hay horas, dejarlo vacío o poner el total de unidades
         if not total_hores:
             total_hores = sum(float(mov.get('UNIDADES/UNITATS', 0) or 0) for mov in movimientos)
-        if "online" in modalidad_lower or "on line" in modalidad_lower or "semipresencial" in modalidad_lower:
+        if "semipresencial" in modalidad_lower:
             modalidad_text = f"de forma {modalidad_lower}"
+        elif "online" in modalidad_lower or "on line" in modalidad_lower or "en línia" in modalidad_lower:
+            modalidad_text = f"en línia"
         else:
             modalidad_text = f"presencial"
         designa_text = (
@@ -718,8 +722,10 @@ def generar_skills_resolc(datos, identificativos, partida, fecha, centre_educati
     if juridico == "funcionario gva":
         # Si modalidad contiene "online" o "on line" (ignorando mayúsculas/minúsculas), poner "de forma online", si no, poner "presencial a"
         modalidad_lower = modalidad.lower()
-        if "online" in modalidad_lower or "on line" in modalidad_lower or "semipresencial" in modalidad_lower:
+        if "semipresencial" in modalidad_lower:
             modalidad_text = f"de forma {modalidad_lower}"
+        elif "online" in modalidad_lower or "on line" in modalidad_lower or "en línia" in modalidad_lower:
+            modalidad_text = f"en línia"
         else:
             modalidad_text = f"presencial"
 
@@ -751,8 +757,10 @@ def generar_skills_resolc(datos, identificativos, partida, fecha, centre_educati
         # Si no hay horas, dejarlo vacío o poner el total de unidades
         if not total_hores:
             total_hores = sum(float(mov.get('UNIDADES/UNITATS', 0) or 0) for mov in movimientos)
-        if "online" in modalidad_lower or "on line" in modalidad_lower or "semipresencial" in modalidad_lower:
+        if "semipresencial" in modalidad_lower:
             modalidad_text = f"de forma {modalidad_lower}"
+        elif "online" in modalidad_lower or "on line" in modalidad_lower or "en línia" in modalidad_lower:
+            modalidad_text = f"en línia"
         else:
             modalidad_text = f"presencial"
         designa_text = (
@@ -985,8 +993,10 @@ def generar_skills_certifica(datos, identificativos, numero_a_letras=lambda x:st
     if juridico == "funcionario gva":
         # Si modalidad contiene "online" o "on line" (ignorando mayúsculas/minúsculas), poner "de forma online", si no, poner "presencial a"
         modalidad_lower = modalidad.lower()
-        if "online" in modalidad_lower or "on line" in modalidad_lower or "semipresencial" in modalidad_lower:
+        if "semipresencial" in modalidad_lower:
             modalidad_text = f"de forma {modalidad_lower}"
+        elif "online" in modalidad_lower or "on line" in modalidad_lower or "en línia" in modalidad_lower:
+            modalidad_text = f"en línia"
         else:
             modalidad_text = f"presencial"
         designa_text = (
@@ -1008,8 +1018,10 @@ def generar_skills_certifica(datos, identificativos, numero_a_letras=lambda x:st
         # Si no hay horas, dejarlo vacío o poner el total de unidades
         if not total_hores:
             total_hores = sum(float(mov.get('UNIDADES/UNITATS', 0) or 0) for mov in movimientos)
-        if "online" in modalidad_lower or "on line" in modalidad_lower or "semipresencial" in modalidad_lower:
+        if "semipresencial" in modalidad_lower:
             modalidad_text = f"de forma {modalidad_lower}"
+        elif "online" in modalidad_lower or "on line" in modalidad_lower or "en línia" in modalidad_lower:
+            modalidad_text = f"en línia"
         else:
             modalidad_text = f"presencial"
         designa_text = (

@@ -32,7 +32,7 @@ def enviar_correus(app, conn):
             msg = Message(
                 subject='Recordatori: Formacions en inscripció a dia de hui',
                 sender='valenciacefire@gmail.com',
-                recipients=['ar.vicenteboix@gva.es'],
+                recipients=['ar.vicenteboix@edu.gva.es'],
                 body=body
             )
             mail.send(msg)

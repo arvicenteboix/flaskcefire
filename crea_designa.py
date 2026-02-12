@@ -486,15 +486,15 @@ def generar_skills(datos, identificativos, partida, numero_a_letras=lambda x:str
         # Si modalidad contiene "online" o "on line" (ignorando mayúsculas/minúsculas), poner "de forma online", si no, poner "presencial a"
         modalidad_lower = modalidad.lower()
         if "semipresencial" in modalidad_lower:
-            modalidad_text = f"de forma {modalidad_lower}"
+            modalidad_text = f"{modalidad_lower}"
         elif "online" in modalidad_lower or "on line" in modalidad_lower or "en línia" in modalidad_lower:
             modalidad_text = f"en línia"
         else:
-            modalidad_text = f"de forma presencial"
+            modalidad_text = f"presencial"
         designa_text = (
             f"1. Designar el personal docent que a continuació es relaciona com a formadors, "
             f"per a formar part de l’equip docent que impartirà la formació {codigo} - {curso}, "
-            f"{modalidad_text} del {fechas}."
+            f"realitzat de manera {modalidad_text} del {fechas}."
         )
     else:
         modalidad_lower = modalidad.lower()
@@ -510,7 +510,7 @@ def generar_skills(datos, identificativos, partida, numero_a_letras=lambda x:str
         if not total_hores:
             total_hores = sum(float(mov.get('UNIDADES/UNITATS', 0) or 0) for mov in movimientos)
         if "semipresencial" in modalidad_lower:
-            modalidad_text = f"de forma {modalidad_lower}"
+            modalidad_text = f"{modalidad_lower}"
         elif "online" in modalidad_lower or "on line" in modalidad_lower or "en línia" in modalidad_lower:
             modalidad_text = f"en línia"
         else:
@@ -518,7 +518,7 @@ def generar_skills(datos, identificativos, partida, numero_a_letras=lambda x:str
         designa_text = (
             f"1. Designar a les persones que a continuació es relaciona com a formadors, "
             f"per a formar part de l’equip que impartirà la formació {codigo} - {curso}, "
-            f"realitzat amb format {modalidad_text} del {fechas}."
+            f"realitzat de manera {modalidad_text} del {fechas}."
         )
 
     doc.add_paragraph(designa_text)
@@ -723,15 +723,15 @@ def generar_skills_resolc(datos, identificativos, partida, fecha, centre_educati
         # Si modalidad contiene "online" o "on line" (ignorando mayúsculas/minúsculas), poner "de forma online", si no, poner "presencial a"
         modalidad_lower = modalidad.lower()
         if "semipresencial" in modalidad_lower:
-            modalidad_text = f"de forma {modalidad_lower}"
+            modalidad_text = f"{modalidad_lower}"
         elif "online" in modalidad_lower or "on line" in modalidad_lower or "en línia" in modalidad_lower:
             modalidad_text = f"en línia"
         else:
-            modalidad_text = f"de forma presencial"
+            modalidad_text = f"presencial"
 
         designa_text = (
             f"Vist l'informe del cap de servei del {fecha}, corresponent a la formació {codigo} - {curso} "
-            f"realitzada {modalidad_text} del {fechas}.\n"
+            f"realitzada de manera {modalidad_text} del {fechas}.\n"
             f"Vist que els col·laboradors externs han realitzat en els termes establits i de manera adequada la labor "
             f"per a la qual van ser designats."
         )
@@ -758,14 +758,14 @@ def generar_skills_resolc(datos, identificativos, partida, fecha, centre_educati
         if not total_hores:
             total_hores = sum(float(mov.get('UNIDADES/UNITATS', 0) or 0) for mov in movimientos)
         if "semipresencial" in modalidad_lower:
-            modalidad_text = f"de forma {modalidad_lower}"
+            modalidad_text = f"{modalidad_lower}"
         elif "online" in modalidad_lower or "on line" in modalidad_lower or "en línia" in modalidad_lower:
             modalidad_text = f"en línia"
         else:
-            modalidad_text = f"de forma presencial"
+            modalidad_text = f"presencial"
         designa_text = (
             f"Vist l'informe del cap de servei del {fecha}, corresponent a la formació {codigo} - {curso} "
-            f"realitzada {modalidad_text} del {fechas}.\n"
+            f"realitzada de manera{modalidad_text} del {fechas}.\n"
             f"Vist que els professors de la formació han realitzat en els termes establits i de manera adequada la labor "
             f"per a la qual van ser designats."
         )
@@ -994,16 +994,16 @@ def generar_skills_certifica(datos, identificativos, numero_a_letras=lambda x:st
         # Si modalidad contiene "online" o "on line" (ignorando mayúsculas/minúsculas), poner "de forma online", si no, poner "presencial a"
         modalidad_lower = modalidad.lower()
         if "semipresencial" in modalidad_lower:
-            modalidad_text = f"de forma {modalidad_lower}"
+            modalidad_text = f"{modalidad_lower}"
         elif "online" in modalidad_lower or "on line" in modalidad_lower or "en línia" in modalidad_lower:
             modalidad_text = f"en línia"
         else:
-            modalidad_text = f"de forma presencial"
+            modalidad_text = f"presencial"
         designa_text = (
             f"Que el personal docent que es relaciona a continuació ha format part com a personal col·laborador per "
             f"a formar part de l'equip docent que van ser anomenats per resolució de la Direcció General de "
             f"Formació Professional, per al curs «{codigo} - {curso}» "
-            f"realitzat {modalidad_text} del {fechas}.\n"
+            f"realitzat de manera {modalidad_text} del {fechas}.\n"
         )
     else:
         modalidad_lower = modalidad.lower()
@@ -1019,16 +1019,16 @@ def generar_skills_certifica(datos, identificativos, numero_a_letras=lambda x:st
         if not total_hores:
             total_hores = sum(float(mov.get('UNIDADES/UNITATS', 0) or 0) for mov in movimientos)
         if "semipresencial" in modalidad_lower:
-            modalidad_text = f"de forma {modalidad_lower}"
+            modalidad_text = f"{modalidad_lower}"
         elif "online" in modalidad_lower or "on line" in modalidad_lower or "en línia" in modalidad_lower:
             modalidad_text = f"en línia"
         else:
-            modalidad_text = f"de forma presencial"
+            modalidad_text = f"presencial"
         designa_text = (
             f"Que el personal que es relaciona a continuació ha format part com a personal col·laborador per "
             f"a formar part de l'equip docent que van ser anomenats per resolució de la Direcció General de "
             f"Formació Professional, per al curs «{codigo} - {curso}» "
-            f"realitzat {modalidad_text} del {fechas}.\n"
+            f"realitzat de manera {modalidad_text} del {fechas}.\n"
         )
 
     doc.add_paragraph(designa_text)

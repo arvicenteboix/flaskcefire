@@ -490,7 +490,7 @@ def generar_skills(datos, identificativos, partida, numero_a_letras=lambda x:str
         elif "online" in modalidad_lower or "on line" in modalidad_lower or "en línia" in modalidad_lower:
             modalidad_text = f"en línia"
         else:
-            modalidad_text = f"presencial"
+            modalidad_text = f"de forma presencial"
         designa_text = (
             f"1. Designar el personal docent que a continuació es relaciona com a formadors, "
             f"per a formar part de l’equip docent que impartirà la formació {codigo} - {curso}, "
@@ -514,7 +514,7 @@ def generar_skills(datos, identificativos, partida, numero_a_letras=lambda x:str
         elif "online" in modalidad_lower or "on line" in modalidad_lower or "en línia" in modalidad_lower:
             modalidad_text = f"en línia"
         else:
-            modalidad_text = f"presencial"
+            modalidad_text = f"de forma presencial"
         designa_text = (
             f"1. Designar a les persones que a continuació es relaciona com a formadors, "
             f"per a formar part de l’equip que impartirà la formació {codigo} - {curso}, "
@@ -727,7 +727,7 @@ def generar_skills_resolc(datos, identificativos, partida, fecha, centre_educati
         elif "online" in modalidad_lower or "on line" in modalidad_lower or "en línia" in modalidad_lower:
             modalidad_text = f"en línia"
         else:
-            modalidad_text = f"presencial"
+            modalidad_text = f"de forma presencial"
 
         designa_text = (
             f"Vist l'informe del cap de servei del {fecha}, corresponent a la formació {codigo} - {curso} "
@@ -762,7 +762,7 @@ def generar_skills_resolc(datos, identificativos, partida, fecha, centre_educati
         elif "online" in modalidad_lower or "on line" in modalidad_lower or "en línia" in modalidad_lower:
             modalidad_text = f"en línia"
         else:
-            modalidad_text = f"presencial"
+            modalidad_text = f"de forma presencial"
         designa_text = (
             f"Vist l'informe del cap de servei del {fecha}, corresponent a la formació {codigo} - {curso} "
             f"realitzada {modalidad_text} del {fechas}.\n"
@@ -998,7 +998,7 @@ def generar_skills_certifica(datos, identificativos, numero_a_letras=lambda x:st
         elif "online" in modalidad_lower or "on line" in modalidad_lower or "en línia" in modalidad_lower:
             modalidad_text = f"en línia"
         else:
-            modalidad_text = f"presencial"
+            modalidad_text = f"de forma presencial"
         designa_text = (
             f"Que el personal docent que es relaciona a continuació ha format part com a personal col·laborador per "
             f"a formar part de l'equip docent que van ser anomenats per resolució de la Direcció General de "
@@ -1023,7 +1023,7 @@ def generar_skills_certifica(datos, identificativos, numero_a_letras=lambda x:st
         elif "online" in modalidad_lower or "on line" in modalidad_lower or "en línia" in modalidad_lower:
             modalidad_text = f"en línia"
         else:
-            modalidad_text = f"presencial"
+            modalidad_text = f"de forma presencial"
         designa_text = (
             f"Que el personal que es relaciona a continuació ha format part com a personal col·laborador per "
             f"a formar part de l'equip docent que van ser anomenats per resolució de la Direcció General de "

@@ -7,46 +7,76 @@ from datetime import datetime
 
 
 # Llistat d'exemple de correus
-
+mail = None
+scheduler = None
 
 def enviar_correus(app, conn):
     """Funció que envia correus a tots els contactes"""
+    
     def envia(datos, tipo):
         with app.app_context():
+            # AGRUPAR por asesoria para enviar UN SOL correo por asesor
+            formacions_por_asesor = {}
             for formacion in datos:
-                usuari = users[formacion['asesoria']]
+                asesoria = formacion['asesoria']
+                if asesoria not in formacions_por_asesor:
+                    formacions_por_asesor[asesoria] = []
+                formacions_por_asesor[asesoria].append(formacion)
+            
+            # Enviar UN correo por cada asesor
+            for asesoria, formacions in formacions_por_asesor.items():
+                usuari = users[formacion['asesoria']]  # ← Solo una vez por asesor
+                body = f"Hola {usuari['nombre']},\n\n"
+                body += f"Recordatori {tipo} per a data { datetime.now().strftime('%d/%m/%y')}:\n\n"
+               
+                
+                for formacion in formacions:
+                    body += f"- {formacion['codi_ed']} - {formacion['titol']}\n"
+                
+                body += "\nSalutacions,"
+                
                 msg = Message(
-                    subject=f'Recordatori: {formacion["titol"]} - {tipo}',
+                    subject=f'Recordatori: {tipo} ({len(formacions)} formacions)',
                     sender='valenciacefire@gmail.com',
                     recipients=[usuari['email']],
-                    body=f"Hola {usuari['nombre']},\n\nEt recordem la formació: {formacion['codigo']} - {formacion['titol']} - a dia de hui està en estat: {tipo}.\n\nSalutacions,"
+                    body=body
                 )
                 mail.send(msg)
+                print(f"  ✓ Enviat {tipo} a {usuari['nombre']} ({len(formacions)} formacions)")
 
     def envia_david(datos):
         with app.app_context():
-            body = "Formacions que entren en inscripció a dia de hui:\n\n"
+            body = "Hola David, \n\nFormacions que entren en inscripció a dia de hui per a posar en Instagram:\n\n"
             for formacion in datos:
-                body += f"Formació: {formacion['codigo']} - {formacion['titol']} - Data Inscripció: {formacion['data_insc']}\n"
+                body += f"Formació: {formacion['codi_ed']} - {formacion['titol']} - Data Inscripció: { datetime.now().strftime('%d/%m/%y')}\n"
 
+            body += "\nSalutacions,"
             msg = Message(
                 subject='Recordatori: Formacions en inscripció a dia de hui',
                 sender='valenciacefire@gmail.com',
-                recipients=['ar.vicenteboix@edu.gva.es'],
+                recipients=['montalva_dav@gva.es'],
                 body=body
             )
             mail.send(msg)
+    '''
+    def envia_david(datos):
+        print ("Execute david")
 
-    
+    def envia(datos, tipo):
+        print(f"  ✓ Enviant {tipo} a {len(datos)} formacions...")
+    '''
     print(datetime.now(), "Enviant correus...")
     cursor = conn.cursor()
     cursor.execute("SELECT id, username, nombre, email FROM users")
     users = cursor.fetchall()
+    print(f"  ✓ Obtinguts {len(users)} usuaris de la base de dades.")
+
 
     cursor.execute("SELECT * FROM formacio where data_ini = date('now')")
     hoy = cursor.fetchall()
+    print(f"  ✓ Obtingudes {len(hoy)} formacions que comencen avui.")
     if len(hoy) > 0:
-        envia(hoy, "Inici")
+        envia(hoy, "Inici de la formació")
 
     cursor.execute("SELECT * FROM formacio where data_insc = date('now')")
     inscripciones = cursor.fetchall()
@@ -68,13 +98,21 @@ def enviar_correus(app, conn):
 def init_mail_and_scheduler(app, conn):
     """Inicialitza Mail i el scheduler amb l'app de Flask."""
     global mail, scheduler
+
+    if scheduler and scheduler.running:
+        print("⚠️  Scheduler ya está ejecutándose. Saltando...")
+        return mail, scheduler
+    
+    print("🚀 Inicializando Mail y Scheduler...")
     mail = Mail(app)
     scheduler = BackgroundScheduler()
+
     # Inicialitzar Mail amb la configuració de app
     mail.init_app(app)
+    scheduler.remove_all_jobs()
     # Configurar scheduler
     scheduler.add_job(func=lambda: enviar_correus(app, conn), trigger='cron', hour=2, minute=0)
-    # scheduler.add_job(func=lambda: enviar_correus(app, conn), trigger='interval', seconds=10)  # Per a proves, envia cada minut
+    # scheduler.add_job(func=lambda: enviar_correus(app, conn), trigger='interval', seconds=10, replace_existing=True)  # Per a proves, envia cada minut
     scheduler.start()
     # Aturar scheduler quan es tanque l'app
     atexit.register(lambda: scheduler.shutdown(wait=False))

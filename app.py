@@ -28,7 +28,7 @@ app.config['MAIL_PASSWORD'] = control['apimail']  # tu contraseña o app passwor
 app.config['MAIL_DEFAULT_SENDER'] = control['email']
 
 # Inicializar Mail y scheduler definidos en correo.py
-mail, scheduler = correu.init_mail_and_scheduler(app, conn)
+correu.init_mail_and_scheduler(app, conn)
 
 app.secret_key = control['appsecret']  # Cambia esto por una clave secreta segura en producción
 
@@ -214,6 +214,77 @@ def create_folder():
             
             pass
     return redirect(url_for("privado"))
+
+
+
+@app.route("/create_folder_sdgfp", methods=["POST"])
+def create_folder_sdgfp():
+    if not session.get("logged_in"):
+        return redirect(url_for("login"))
+    print("create_folder_sdgfp called")
+    if request.method == "POST":
+        # Aquí manejarías la creación de la carpeta
+        data = request.get_json()        # dict de Python
+        codigo = data.get('codigo')
+        asesor = data.get('asesor')
+        
+        print(f"Codigo: {codigo}, Asesor: {asesor}")
+        if codigo and asesor:
+            repo_dir = os.path.dirname(__file__)
+            root_folder = f"{codigo}_{asesor}"
+
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
+            print(f"Creating zip file at: {tmp.name}")
+            tmp.close()
+            try:
+                with zipfile.ZipFile(tmp.name, "w", zipfile.ZIP_DEFLATED) as zf:
+                    # Aquí agregarías los archivos a la carpeta zip
+                    # Por ejemplo, creando archivos de texto de ejemplo
+                    for archivo in os.listdir("./crea_carpeta_sdgfp"):
+                        ruta_completa = os.path.join("./crea_carpeta_sdgfp", archivo)
+                        if os.path.isfile(ruta_completa):
+                            nuevo_nombre = f"{codigo}_{archivo}"  # Prefijo + nombre original
+                            arcname = os.path.join(root_folder, nuevo_nombre)
+                            zf.write(ruta_completa, arcname=arcname)
+                        else:
+                            # si es un directorio, manejar su contenido
+                            if os.path.isdir(ruta_completa):
+                                # Carpeta que termina en "-Tec": renombrar carpeta a "{codigo}-Tec"
+                                # y prefixar todos los archivos con "codigo_"
+                                if archivo.endswith("-Tec"):
+                                    new_dir = f"{codigo}-Tec"
+                                    for root, _, files in os.walk(ruta_completa):
+                                        for fname in files:
+                                            full = os.path.join(root, fname)
+                                            # usar solo el nombre del archivo (sin subcarpetas internas) para el prefijo
+                                            nuevo_nombre = f"{codigo}_{os.path.basename(fname)}"
+                                            arcname = os.path.join(root_folder, new_dir, nuevo_nombre)
+                                            zf.write(full, arcname=arcname)
+                                else:
+                                    # Otras carpetas: conservar estructura dentro de root_folder
+                                    base = os.path.abspath(os.path.join("./crea_carpeta_sdgfp"))
+                                    for root, _, files in os.walk(ruta_completa):
+                                        for fname in files:
+                                            full = os.path.join(root, fname)
+                                            rel = os.path.relpath(full, base)  # incluye el nombre de la carpeta original
+                                            arcname = os.path.join(root_folder, rel)
+                                            zf.write(full, arcname=arcname)
+
+                    #zf.writestr(f"{root_folder}/info.txt", f"Código: {codigo}\nAsesor: {asesor}\n")
+                    #zf.writestr(f"{root_folder}/readme.txt", "Esta es una carpeta creada automáticamente.\n")
+                    print(f"Zip file {tmp.name} created successfully.")              
+                try:
+                    return send_file(tmp.name, as_attachment=True, download_name=f"{root_folder}.zip")
+                except TypeError:
+                    return send_file(tmp.name, as_attachment=True, attachment_filename=f"{root_folder}.zip")
+            finally:
+                # don't remove immediately to allow send_file to read it; optional cleanup could be added later
+                pass
+            # Lógica para crear la carpeta
+            
+            pass
+    return redirect(url_for("privado"))
+
 
 @app.route("/designes", methods=["POST"])
 def designes():

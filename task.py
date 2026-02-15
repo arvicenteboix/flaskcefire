@@ -23,9 +23,11 @@ def procesar_ai_async(task_id, prompt, GOOGLE_AI_KEY):
             resp = client.models.generate_content(
                 model="gemini-2.5-flash-lite", contents=prompt
             )
+
+            resp_text = resp.text.replace("```json", "").replace("```", "")
             
             if resp and resp.text:
-                texto = resp.text
+                texto = resp_text
                 print(texto)
                 tareas[task_id]["result"] = texto
             else:

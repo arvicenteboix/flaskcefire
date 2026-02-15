@@ -1,0 +1,374 @@
+<div class="modal fade" id="modalPerfil" tabindex="-1" aria-labelledby="modalPerfilLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalPerfilLabel">Perfil</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    <strong>⚠️ Avís Important:</strong> Esta és una aplicació en fase de proves. Per utilizar aquesta
+                    funcionalitat, necessites obtenir una API key de <a href="https://aistudio.google.com"
+                        target="_blank">Google AI Studio</a> i configurar-la en el teu perfil. Els resultats poden ser
+                    inesperats o inconsistents.
+                    Esta aplicació només revisa objectius i continguts i no altres camps del perfil. Si tens qualsevol
+                    dubte o suggeriment, contacta amb l'administrador.
+                    Les condicions, observacions i dirigit a es carregaran automàticament segons el perfil seleccionat,
+                    però pots editar-los lliurement després. Recorda revisar-los abans de copiar.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                <form>
+                    <div class="row">
+                        <!-- Fila 1 -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="objetivos_val" class="form-label">Objetius</label>
+                                <div class="position-relative">
+                                    <textarea class="form-control" id="objetivos_val" placeholder="Valenciano"
+                                        rows="4"></textarea>
+                                    <button type="button" class="btn btn-sm btn-light position-absolute"
+                                        style="top: 5px; right: 5px;" onclick="copyToClipboard('objetivos_val')"><i
+                                            class="fas fa-copy" style="color: #72727298; font-size: 1em;"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="objetivos_cas" class="form-label">Objetivos</label>
+                                <div class="position-relative">
+                                    <textarea class="form-control" id="objetivos_cas" placeholder="Castellano"
+                                        rows="4"></textarea>
+                                    <button type="button" class="btn btn-sm btn-light position-absolute"
+                                        style="top: 5px; right: 5px;" onclick="copyToClipboard('objetivos_cas')"><i
+                                            class="fas fa-copy" style="color: #72727298; font-size: 1em;"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Fila 2 -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="contenidos_val" class="form-label">Continguts</label>
+                                <div class="position-relative">
+                                    <textarea class="form-control" id="contenidos_val" placeholder="Valenciano"
+                                        rows="4"></textarea>
+                                    <button type="button" class="btn btn-sm btn-light position-absolute"
+                                        style="top: 5px; right: 5px;" onclick="copyToClipboard('contenidos_val')"><i
+                                            class="fas fa-copy" style="color: #72727298; font-size: 1em;"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="contenidos_cas" class="form-label">Contenidos</label>
+                                <div class="position-relative">
+                                    <textarea class="form-control" id="contenidos_cas" placeholder="Castellano"
+                                        rows="4"></textarea>
+                                    <button type="button" class="btn btn-sm btn-light position-absolute"
+                                        style="top: 5px; right: 5px;" onclick="copyToClipboard('contenidos_cas')"><i
+                                            class="fas fa-copy" style="color: #72727298; font-size: 1em;"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Fila 3 -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="condicions_val" class="form-label">Condicions</label>
+                                <div class="position-relative">
+                                    <textarea class="form-control" id="condicions_val" placeholder="Valenciano"
+                                        rows="4"></textarea>
+                                    <button type="button" class="btn btn-sm btn-light position-absolute"
+                                        style="top: 5px; right: 5px;" onclick="copyToClipboard('condicions_val')"><i
+                                            class="fas fa-copy" style="color: #72727298; font-size: 1em;"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="condicions_cas" class="form-label">Condiciones</label>
+                                <div class="position-relative">
+                                    <textarea class="form-control" id="condicions_cas" placeholder="Castellano"
+                                        rows="4"></textarea>
+                                    <button type="button" class="btn btn-sm btn-light position-absolute"
+                                        style="top: 5px; right: 5px;" onclick="copyToClipboard('condicions_cas')"><i
+                                            class="fas fa-copy" style="color: #72727298; font-size: 1em;"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Fila 4 -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="observacions_val" class="form-label">Observacions</label>
+                                <div class="position-relative">
+                                    <textarea class="form-control" id="observacions_val" placeholder="Valenciano"
+                                        rows="4"></textarea>
+                                    <button type="button" class="btn btn-sm btn-light position-absolute"
+                                        style="top: 5px; right: 5px;" onclick="copyToClipboard('observaciones_val')"><i
+                                            class="fas fa-copy" style="color: #72727298; font-size: 1em;"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="observacions_cas" class="form-label">Observacions</label>
+                                <div class="position-relative">
+                                    <textarea class="form-control" id="observacions_cas" placeholder="Castellano"
+                                        rows="4"></textarea>
+                                    <button type="button" class="btn btn-sm btn-light position-absolute"
+                                        style="top: 5px; right: 5px;" onclick="copyToClipboard('observaciones_cas')"><i
+                                            class="fas fa-copy" style="color: #72727298; font-size: 1em;"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Fila 5 -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="dirigido_val" class="form-label">Dirigit a</label>
+                                <div class="position-relative">
+                                    <textarea class="form-control" id="dirigido_val" placeholder="Valenciano"
+                                        rows="4"></textarea>
+                                    <button type="button" class="btn btn-sm btn-light position-absolute"
+                                        style="top: 5px; right: 5px;" onclick="copyToClipboard('dirigido_val')"><i
+                                            class="fas fa-copy" style="color: #72727298; font-size: 1em;"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="dirigido_cas" class="form-label">Dirigido a</label>
+                                <div class="position-relative">
+                                    <textarea class="form-control" id="dirigido_cas" placeholder="Castellano"
+                                        rows="4"></textarea>
+                                    <button type="button" class="btn btn-sm btn-light position-absolute"
+                                        style="top: 5px; right: 5px;" onclick="copyToClipboard('dirigido_cas')"><i
+                                            class="fas fa-copy" style="color: #72727298; font-size: 1em;"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-body border-top pt-3">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" id="fse" name="perfil_type"
+                                        value="fse">
+                                    <label class="form-check-label" for="fse">FSE</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" id="paa" name="perfil_type"
+                                        value="paa">
+                                    <label class="form-check-label" for="paa">PAA</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" id="aapp" name="perfil_type"
+                                        value="aapp">
+                                    <label class="form-check-label" for="aapp">AAPP</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <script>
+                    function copyToClipboard(elementId) {
+                        const element = document.getElementById(elementId);
+                        const text = element.value;
+                        navigator.clipboard.writeText(text).catch(err => {
+                            console.error('Error al copiar:', err);
+                        });
+                    }
+                </script>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    document.querySelector('#modalPerfil .btn-primary').addEventListener('click', async function () {
+        if (document.getElementById('fse').checked) {
+            document.getElementById('condicions_val').value = `    1. Acompliment d'un lloc de treball relacionat directament amb la temàtica de l'activitat.
+    2. Professorat d'especialitats docents relacionades directament amb la temàtica de l'activitat.
+    3. Orde d'inscripció seguint el següent criteri:
+       - Personal docent en actiu en centres sostinguts amb fons públics (de titularitat pública i privats concertats. Art. 108 LOE 2/2006).
+       - Personal tècnic no docent en actiu en centres sostinguts amb fons públics (de titularitat pública i privats concertats. Art. 108 LOE 2/2006).
+       - Personal inscrit en alguna de les borses de personal docent de la Conselleria d'Educació, Cultura i Universitats.
+       - La resta del professorat.
+    Per a poder realitzar el curs, les persones participants han de tindre domini de la plataforma Aules a nivell d'usuari. Serà obligatori accedir a la plataforma Aules durant els tres primers dies del curs.
+            `;
+            document.getElementById('condicions_cas').value = `    1.Desempeño de un puesto de trabajo relacionado directamente con la temática de la actividad. 
+    2.Profesorado de especialidades docentes relacionadas directamente con la temática de la actividad.
+    3.Orden de inscripción siguiendo el siguiente criterio:
+    - Personal docente en activo en centros sostenidos con fondos públicos (de titularidad pública y privados concertados. Art. 108 LOE 2/2006).
+    - Personal técnico no docente en activo en centros sostenidos con fondos públicos (de titularidad pública y privados concertados. Art. 108 LOE 2/2006).
+    - Personal inscrito en alguna de las bolsas de personal docente de la Conselleria de Educación, Cultura y Universidades
+    - Resto del profesorado.
+Para poder realizar el curso las personas participantes deben tener dominio de la plataforma Aules a nivel de usuario. Será obligatorio acceder a la plataforma Aules durante los tres primeros días del curso.
+            `;
+            document.getElementById('observacions_val').value = `Esta activitat formativa està cofinançada pel Fons Social Europeu. L'FSE invertix en el teu futur.
+El curs es realitzarà en la modalitat a distància. La realització de totes les tasques és obligatòria per a obtindre la certificació. Serà obligatori accedir a l'aula virtual del curs durant els tres primers dies del curs.
+            `;
+            document.getElementById('observacions_cas').value = `Esta actividad formativa está cofinanciada por el Fondo Social Europeo. El FSE invierte en tu futuro.
+El curso se realizará en la modalidad a distancia. La realización de todas las tareas es obligatoria para obtener la certificación. Será obligatorio acceder al aula virtual del curso durante los tres primeros días del curso.
+            `;
+
+            document.getElementById('dirigido_val').value = `Personal docent i personal tècnic no docent, amb destinació en centres educatius no universitaris de la Comunitat Valenciana, en els quals s'impartisquen els ensenyaments regulats per la Llei orgànica d'educació. 
+Personal docent i personal tècnic no docent, que preste servicis tècnics de suport educatiu als centres indicats en l'apartat anterior. 
+Personal que haja finalitzat els graus i el màster que conduïxen a l'obtenció de la titulació docent, sempre que es troben inscrits en alguna de les borses de personal docent de la Conselleria d'Educació, Cultura i Universitats, i este personal no supose més del 50 % de participació en l'activitat
+REQUISITS ESPECÍFICS 
+  Professorat de Formació Professional de la família d'Informàtica i Comunicacions.`;
+            document.getElementById('dirigido_cas').value = `Personal docente y personal técnico no docente, con destino en centros educativos no universitarios de la Comunitat Valenciana, en los que se impartan las enseñanzas reguladas por la Ley orgánica de educación. 
+Personal docente y personal técnico no docente, que preste servicios técnicos de apoyo educativo a los centros indicados en el apartado anterior. 
+Personal que haya finalizado los grados y el máster que conducen a la obtención de la titulación docente, siempre que se encuentren inscritos en alguna de las bolsas de personal docente de la Conselleria de Educación, Cultura y Universidades, y dicho personal no suponga más del 50 % de participación en la actividad.
+REQUISITOS ESPECÍFICOS 
+  Profesorado de Formación Profesional de la familia de Informática y Comunicaciones.`;
+
+        } else if (document.getElementById('paa').checked) {
+            document.getElementById('condiciones_val').value = `1.Acompliment d'un lloc de treball relacionat directament amb la temàtica de l'activitat. 
+2.Professorat d'especialitats docents relacionades directament amb la temàtica de l'activitat.
+3.Orde d'inscripció seguint el següent criteri:
+    - Personal docent en actiu en centres sostinguts amb fons públics (de titularitat pública i privats concertats. Art. 108 LOE 2/2006).
+    - Personal tècnic no docent en actiu en centres sostinguts amb fons públics (de titularitat pública i privats concertats. Art. 108 LOE 2/2006).
+    - Personal inscrit en alguna de les borses de personal docent de la Conselleria d'Educació, Cultura i Universitats. 
+    - La resta del professorat.
+Per a poder realitzar el curs, les persones participants han de tindre domini de la plataforma Aules a nivell d'usuari. Serà obligatori accedir a la plataforma Aules durant els tres primers dies del curs.
+            `;
+            document.getElementById('condiciones_cas').value = `1.Desempeño de un puesto de trabajo relacionado directamente con la temática de la actividad. 
+2.Profesorado de especialidades docentes relacionadas directamente con la temática de la actividad.
+3.Orden de inscripción siguiendo el siguiente criterio:
+    - Personal docente en activo en centros sostenidos con fondos públicos (de titularidad pública y privados concertados. Art. 108 LOE 2/2006).
+    - Personal técnico no docente en activo en centros sostenidos con fondos públicos (de titularidad pública y privados concertados. Art. 108 LOE 2/2006).
+    - Personal inscrito en alguna de las bolsas de personal docente de la Conselleria de Educación, Cultura y Universidades
+    - Resto del profesorado.
+Para poder realizar el curso las personas participantes deben tener dominio de la plataforma Aules a nivel de usuario. Será obligatorio acceder a la plataforma Aules durante los tres primeros días del curso.
+            `;
+            document.getElementById('observaciones_val').value = `El curs es realitzarà en la modalitat a distància. La realització de totes les tasques és obligatòria per a obtindre la certificació. Serà obligatori accedir a l'aula virtual del curs durant els tres primers dies del curs.
+            `;
+            document.getElementById('observaciones_cas').value = `El curso se realizará en la modalidad a distancia. La realización de todas las tareas es obligatoria para obtener la certificación. Será obligatorio acceder al aula virtual del curso durante los tres primeros días del curso.
+            `;
+
+            document.getElementById('dirigido_val').value = `Personal docent i personal tècnic no docent, amb destinació en centres educatius no universitaris de la Comunitat Valenciana, en els quals s'impartisquen els ensenyaments regulats per la Llei orgànica d'educació. 
+Personal docent i personal tècnic no docent, que preste servicis tècnics de suport educatiu als centres indicats en l'apartat anterior. 
+Personal que haja finalitzat els graus i el màster que conduïxen a l'obtenció de la titulació docent, sempre que es troben inscrits en alguna de les borses de personal docent de la Conselleria d'Educació, Cultura i Universitats, i este personal no supose més del 50 % de participació en l'activitat.
+REQUISITS ESPECÍFICS 
+  Professorat de Formació Professional de la família d'Informàtica i Comunicacions.`;
+            document.getElementById('dirigido_cas').value = `Personal docente y personal técnico no docente, con destino en centros educativos no universitarios de la Comunitat Valenciana, en los que se impartan las enseñanzas reguladas por la Ley orgánica de educación. 
+Personal docente y personal técnico no docente, que preste servicios técnicos de apoyo educativo a los centros indicados en el apartado anterior. 
+Personal que haya finalizado los grados y el máster que conducen a la obtención de la titulación docente, siempre que se encuentren inscritos en alguna de las bolsas de personal docente de la Conselleria de Educación, Cultura y Universidades, y dicho personal no suponga más del 50 % de participación en la actividad.
+REQUISITOS ESPECÍFICOS 
+  Profesorado de Formación Profesional de la familia de Informática y Comunicaciones.`;
+
+
+        } else if (document.getElementById('aapp').checked) {
+            alert('Perfil AAPP no està disponible encara');
+            return;
+        }
+
+
+
+        const form = document.querySelector('#modalPerfil form');
+        const formData = new FormData(form);
+        const data = {
+            "perfil": {
+                objetivos_val: document.getElementById('objetivos_val').value,
+                objetivos_cas: document.getElementById('objetivos_cas').value,
+                contenidos_val: document.getElementById('contenidos_val').value,
+                contenidos_cas: document.getElementById('contenidos_cas').value,
+            }
+        };
+        // Show spinner overlay
+        const spinner = document.createElement('div');
+        spinner.className = 'spinner-overlay';
+        spinner.innerHTML = `
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-3">Processant...</p>
+        </div >
+    `;
+        document.body.appendChild(spinner);
+
+        try {
+            const response = await axios.post('/comprovaperfil', data, {
+                timeout: 120000
+            });
+            if (response.status === 200) {
+                let data = response.data;
+                console.log('Resposta del servidor:', data);
+                // Si es string (común en Flask/Laravel APIs), parsea
+                if (typeof data === 'string') {
+                    try {
+                        data = JSON.parse(data);
+                    } catch (e) {
+                        console.error('Error al parsear JSON:', e, 'Data original:', data);
+                        alert('Error del servidor (probablement la teua API o el servidor de Google): \n' + data);
+                        return;
+                    }
+                }
+
+                // Debug: mira qué tienes exactamente
+                console.log('Data cruda:', data);
+
+                // Accede al perfil ANIDADO
+                const perfil = data.perfil || {};
+                console.log('Perfil extraído:', perfil);
+
+                if (!perfil.objetivos_val && !perfil.objetivos_cas && !perfil.contenidos_val && !perfil.contenidos_cas) {
+                    alert('El servidor no ha tornat el camps esperats.');
+                    return;
+                }
+
+                // Ahora asigna con fallbacks
+                document.getElementById('objetivos_val').value = (perfil.objetivos_val || '').replace(/\\\n/g, '\n');
+                document.getElementById('objetivos_cas').value = (perfil.objetivos_cas || '').replace(/\\\n/g, '\n');
+                document.getElementById('contenidos_val').value = (perfil.contenidos_val || '').replace(/\\\n/g, '\n');
+                document.getElementById('contenidos_cas').value = (perfil.contenidos_cas || '').replace(/\\\n/g, '\n');
+
+                alert('Perfil cargado correctamente');
+            }
+        } catch (error) {
+            console.error('Error details:', error.response || error.message);
+            alert('Error al guardar: ' + (error.response?.data?.message || error.message || 'Error desconocido'));
+        } finally {
+            spinner.remove();
+        }
+    });
+</script>
+
+<style>
+    .spinner-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+
+    .spinner-container {
+        text-align: center;
+        color: white;
+    }
+</style>

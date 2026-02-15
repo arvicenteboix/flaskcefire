@@ -9,6 +9,12 @@ import crea_designa
 import json
 import correu
 
+import task
+
+from threading import Event
+import uuid
+from datetime import datetime
+
 app = Flask(__name__)
 
 # Usar SQLite en lugar de MySQL
@@ -838,6 +844,31 @@ def recordatoridates():
             return jsonify({"success": True, "message": "Recordatori guardat"}), 200
         except sqlite3.Error as e:
             return jsonify({"error": str(e)}), 400
+        
+# FALTA CREAR EL PROMPT PER A RESOLDRE LA RESPOSTA
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=80, debug=False)
+@app.route("/comprovaperfil", methods=["POST"])
+def comprovaperfil():
+    if not session.get("logged_in"):
+        return redirect(url_for("login"))
+
+    perfil = request.json.get("perfil")
+    if not perfil:
+        return jsonify({"error": "Falten dades en JSON"}), 400
+    
+    prompt = f"En el següent json tens perfils en valencià i en castellà: {perfil}\n\n. Vull que revises el text i fes complixca els requisits lingüístics següents:\n- El text ha d'estar en valencià normatiu de la Generalitat (desenrotllar i no desenvolupar, servici i no servei, este enlloc d'aquest, etc...) o en castellà normatiu segons cada text, sense paraules en altres llengües. Aquells termes que traduixques tant en castellà com en valencià em poses després entre parèntesis el terme en anglès.\n- El text ha de ser formal i adequat per a un perfil professional.\n- El text ha de ser clar, concís i ben estructurat.\n\nRevisa el text i torna'm només el text corregit complint els requisits, sense cap explicació addicional ni comentaris. M'has de tornar el text amb amb un JSON així: {{'perfil': {{ 'objetivos_val': 'Ací la resposta', 'objetivos_cas': 'Ací la resposta', 'contenidos_val': 'Ací la resposta'}}}}, però amb les respostes del perfil corregit segons els requisits lingüístics indicats. No has de canviar res més del JSON, és necessari que siga eixe format de JSON inamovible, només el text del perfil per a complir els requisits. Si el text ja compleix els requisits, torna'm el mateix text sense canvis. Omiteix la formatició tipo ```json o similar, només vull el JSON pur com a resposta."
+    
+    GOOGLE_AI_KEY = conn.cursor().execute("SELECT api_key FROM users WHERE id = ?", (session.get("user_id"),)).fetchone()["api_key"]
+    
+    task_id = str(uuid.uuid4())
+    task.tareas[task_id] = {"event": Event(), "result": None, "status": "waiting"}
+    
+    task.procesar_ai_async(task_id, prompt, GOOGLE_AI_KEY)
+    
+    if task.tareas[task_id]["event"].wait(timeout=120):
+        result = task.tareas[task_id]["result"]
+        del task.tareas[task_id]  # Limpia memoria
+        return jsonify(result)
+    else:
+        del task.tareas[task_id]
+        return jsonify({"error": "Timeout (120s)"}), 408

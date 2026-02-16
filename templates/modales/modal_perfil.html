@@ -345,8 +345,8 @@ REQUISITOS ESPECÍFICOS
                 alert('Perfil cargado correctamente');
             }
         } catch (error) {
-            console.error('Error details:', error.response || error.message);
-            alert('Error al guardar: ' + (error.response?.data?.message || error.message || 'Error desconocido'));
+            console.error('Error details:', error.response);
+            alert('Error al processar: ' + (error.response.data['error']));
         } finally {
             spinner.remove();
         }

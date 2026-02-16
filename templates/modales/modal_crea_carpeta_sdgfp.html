@@ -10,21 +10,21 @@
 
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="codigoInput" class="form-label">Código</label>
-                        <input type="text" class="form-control" id="codigoInput" maxlength="11"
+                        <label for="codigoInput1" class="form-label">Código</label>
+                        <input type="text" class="form-control" id="codigoInput1" maxlength="11"
                             placeholder="Ej: 26FP36CF567" required>
-                        <div class="invalid-feedback" id="codigoError">Formato inválido. Debe ser:
+                        <div class="invalid-feedback" id="codigoError1">Formato inválido. Debe ser:
                             2números+2letras+2números+2letras+3números.</div>
                     </div>
 
                     <div class="mb-3">
                         <label for="asesorSelect1" class="form-label">Asesor</label>
                         <select id="asesorSelect1" class="form-select" required></select>
-                        <div class="invalid-feedback" id="asesorError">Seleccione un asesor.</div>
+                        <div class="invalid-feedback" id="asesorError1">Seleccione un asesor.</div>
                     </div>
 
-                    <div id="submitError" class="alert alert-danger d-none" role="alert"></div>
-                    <div id="submitSuccess" class="alert alert-success d-none" role="alert"></div>
+                    <div id="submitError1" class="alert alert-danger d-none" role="alert"></div>
+                    <div id="submitSuccess1" class="alert alert-success d-none" role="alert"></div>
                 </div>
 
                 <div class="modal-footer">
@@ -43,12 +43,12 @@
     (function () {
         const asesores = ["ALFREDO", "GLORIA", "PACO", "VERA", "GEMMA", "CAMILO", "SANTIAGO", "ANNA", "LOURDES", "LORENA", "PATRICIA", "JOSE", "DAVID", "IGNASI"];
         const asesorSelect1 = document.getElementById('asesorSelect1');
-        const codigoInput = document.getElementById('codigoInput');
+        const codigoInput1 = document.getElementById('codigoInput1');
         const form = document.getElementById('formCreaCarpetaSDGFP');
-        const codigoError = document.getElementById('codigoError');
-        const asesorError = document.getElementById('asesorError');
-        const submitError = document.getElementById('submitError');
-        const submitSuccess = document.getElementById('submitSuccess');
+        const codigoError1 = document.getElementById('codigoError1');
+        const asesorError1 = document.getElementById('asesorError1');
+        const submitError1 = document.getElementById('submitError1');
+        const submitSuccess1 = document.getElementById('submitSuccess1');
 
         // Poblar select
         asesores.forEach(a => {
@@ -65,13 +65,13 @@
         }
 
         // Convertir a mayúsculas al escribir
-        codigoInput.addEventListener('input', () => {
-            const pos = codigoInput.selectionStart;
-            codigoInput.value = codigoInput.value.toUpperCase();
-            codigoInput.setSelectionRange(pos, pos);
-            codigoInput.classList.remove('is-invalid');
-            submitError.classList.add('d-none');
-            submitSuccess.classList.add('d-none');
+        codigoInput1.addEventListener('input', () => {
+            const pos = codigoInput1.selectionStart;
+            codigoInput1.value = codigoInput1.value.toUpperCase();
+            codigoInput1.setSelectionRange(pos, pos);
+            codigoInput1.classList.remove('is-invalid');
+            submitError1.classList.add('d-none');
+            submitSuccess1.classList.add('d-none');
         });
 
         asesorSelect1.addEventListener('change', () => {
@@ -80,18 +80,18 @@
 
         form.addEventListener('submit', function (e) {
             e.preventDefault();
-            submitError.classList.add('d-none');
-            submitSuccess.classList.add('d-none');
+            submitError1.classList.add('d-none');
+            submitSuccess1.classList.add('d-none');
 
-            const codigo = codigoInput.value.trim().toUpperCase();
+            const codigo = codigoInput1.value.trim().toUpperCase();
             const asesor = asesorSelect1.value;
 
             let ok = true;
             if (!validaCodigo(codigo)) {
-                codigoInput.classList.add('is-invalid');
+                codigoInput1.classList.add('is-invalid');
                 ok = false;
             } else {
-                codigoInput.classList.remove('is-invalid');
+                codigoInput1.classList.remove('is-invalid');
             }
 
             if (!asesor) {
@@ -106,9 +106,9 @@
             // Petición axios a /create_folder
             axios.post('/create_folder_sdgfp', { codigo: codigo, asesor: asesor })
                 .then(resp => {
-                    submitSuccess.textContent = resp.data && resp.data.message ? resp.data.message : 'Carpeta creada correctamente.';
+                    submitSuccess1.textContent = resp.data && resp.data.message ? resp.data.message : 'Carpeta creada correctamente.';
 
-                    submitSuccess.classList.remove('d-none');
+                    submitSuccess1.classList.remove('d-none');
                     // intenta descargar si la respuesta ya trae el fichero (blob/arraybuffer)
                     function downloadFromResponse(res) {
                         const isArrayBuffer = res.data instanceof ArrayBuffer;
@@ -137,12 +137,12 @@
                         // si la primera respuesta no es el blob, re-solicita con responseType 'blob' y descarga
                         axios.post('/create_folder_sdgfp', { codigo: codigo, asesor: asesor }, { responseType: 'blob' })
                             .then(r2 => downloadFromResponse(r2) || (function () {
-                                submitError.textContent = 'No se recibió el fichero para descargar.';
-                                submitError.classList.remove('d-none');
+                                submitError1.textContent = 'No se recibió el fichero para descargar.';
+                                submitError1.classList.remove('d-none');
                             })())
                             .catch(() => {
-                                submitError.textContent = 'Error al descargar el fichero.';
-                                submitError.classList.remove('d-none');
+                                submitError1.textContent = 'Error al descargar el fichero.';
+                                submitError1.classList.remove('d-none');
                             });
                     }
                     // opcional: cerrar modal después de un rato
@@ -156,8 +156,8 @@
                     const msg = err.response && err.response.data && err.response.data.message
                         ? err.response.data.message
                         : 'Error al crear la carpeta.';
-                    submitError.textContent = msg;
-                    submitError.classList.remove('d-none');
+                    submitError1.textContent = msg;
+                    submitError1.classList.remove('d-none');
                 });
         });
     })();

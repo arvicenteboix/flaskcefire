@@ -856,10 +856,68 @@ def comprovaperfil():
     if not perfil:
         return jsonify({"error": "Falten dades en JSON"}), 400
     
-    prompt = f"En el següent json tens perfils en valencià i en castellà: {perfil}\n\n. Vull que revises el text i fes complixca els requisits lingüístics següents:\n- El text ha d'estar en valencià normatiu de la Generalitat Valenciana (desenrotllar enlloc desenvolupar, desentllament enlloc de desenvolupar servici enlloc servei, este enlloc d'aquest, i totes les formes derivades d'estes) o en castellà normatiu segons cada text, sense paraules en altres llengües. Aquells termes que traduixques tant en castellà com en valencià em poses després entre parèntesis el terme en anglès.\n- El text ha de ser formal i adequat per a un perfil professional.\n- El text ha de ser clar, concís i ben estructurat.\n\nRevisa el text i torna'm només el text corregit complint els requisits, sense cap explicació addicional ni comentaris. M'has de tornar el text amb amb un JSON així: {{\"perfil\": {{ \"objetivos_val\": \"Ací la resposta\", \"objetivos_cas\": \"Ací la resposta\", \"contenidos_val\": \"Ací la resposta\"}}}}, però amb les respostes del perfil corregit segons els requisits lingüístics indicats. No has de canviar res més del JSON, és necessari que siga eixe format de JSON inamovible, només el text del perfil per a complir els requisits. Si el text ja compleix els requisits, torna'm el mateix text sense canvis. Només vull el JSON pur com a resposta i és important que tingues en compte les indiciacions ling¨´istiques que t'he donat."
-    
+    prompt = f"En el següent json tens perfils en valencià i en castellà: {perfil}\n\n. Vull que revises el text i fes complixca els requisits lingüístics següents:\n- El text ha d'estar en valencià normatiu de la Generalitat Valenciana AVL (desenrotllar enlloc desenvolupar, desenrotllament enlloc de desenvolupament, servici enlloc servei, este enlloc d'aquest, i totes les formes derivades...) o en castellà normatiu segons cada text, sense paraules en altres llengües. Aquells termes que traduixques tant en castellà com en valencià em poses després entre parèntesis el terme en anglès.\n- El text ha de ser formal i adequat per a un perfil professional.\n- El text ha de ser clar, concís i ben estructurat.\n\nRevisa el text i torna'm només el text corregit complint els requisits, sense cap explicació addicional ni comentaris. M'has de tornar el text amb amb un JSON així: {{\"perfil\": {{ \"objetivos_val\": \"Ací la resposta\", \"objetivos_cas\": \"Ací la resposta\", \"contenidos_val\": \"Ací la resposta\"}}}}, però amb les respostes del perfil corregit segons els requisits lingüístics indicats. No has de canviar res més del JSON, és necessari que siga eixe format de JSON inamovible, només el text del perfil per a complir els requisits. Si el text ja compleix els requisits, torna'm el mateix text sense canvis. Només vull el JSON pur com a resposta i és important que tingues en compte les indiciacions lingüistiques que t'he donat."
+   
+
+
+    prompt2 = """Actua com un expert lingüista en valencià normatiu (AVL) i castellà normatiu. Tens aquest JSON amb perfils professionals:
+
+    {perfil}
+
+    Tasca: Revisa cada secció del JSON i assegura't que compleix aquests requisits estrictes:
+
+    ## REQUISITS LINGÜÍSTICS OBLIGATORIS
+
+    ### 1. VALENCIÀ NORMATIU (Generalitat Valenciana)
+    - desenrotllar (NO desenvolupar)
+    - desenrotllament (NO desenvolupament) 
+    - servici (NO servei)
+    - este (NO aquest)
+    - totes les formes derivades: desenrotlla, desenrotllaments, servicis, estes...
+    - Verbs: col·locar (NO colocar), enxaneta, etc.
+    - Ortografia AVL: llengua, València, atenció, etc.
+
+    ### 2. CASTELLÀ NORMATIU (RAE)
+    - Ortografia RAE estàndard
+
+    ### 3. REQUISITS GENERAL
+    - NOMÉS valencià o castellà segons la secció
+    - Termes tècnics: traduïu + (anglès) ex: "intel·ligència artificial (artificial intelligence)"
+    - Formalitat professional absoluta
+    - Clar, concís, estructurat (1-2 frases per idea)
+
+    ## RESPOSTA OBLIGATÒRIA
+    Torna **NOMÉS** aquest JSON exacte, sense explicacions:
+
+    ```json
+    {{"perfil": {{ 
+    "objetivos_val": "TEXT CORREGIT VALENCIÀ", 
+    "objetivos_cas": "TEXT CORREGIT CASTELLÀ", 
+    "contenidos_val": "TEXT CORREGIT VALENCIÀ",
+    "contenidos_cas": "TEXT CORREGIT CASTELLÀ"
+    }}}}
+    ```
+
+    ✅ Si ja compleix els requisits: copia text original  
+    ❌ Si té errors: corregeix només segons requisits  
+    ⚠️  NUNCA canvies l'estructura JSON ni afegeixes text extra
+
+    **Exemple de correcció necessària:**
+    ```
+    Entrada: "desenvolupar web service"
+    Sortida valencià: "desenrotllar servici web (web service)"
+    ```
+
+    RESPONS NOMÉS EL JSON VALIDAT. No has de canviar res més del JSON, és necessari que siga eixe format de JSON inamovible, només el text del perfil per a complir els requisits. Si el text ja compleix els requisits, torna'm el mateix text sense canvis. Només vull el JSON pur com a resposta i és important que tingues en compte les indiciacions lingüistiques que t'he donat."""
+
+
     GOOGLE_AI_KEY = conn.cursor().execute("SELECT api_key FROM users WHERE id = ?", (session.get("user_id"),)).fetchone()["api_key"]
     
+    if not GOOGLE_AI_KEY:
+        return jsonify({"error": "No tens la API key configurada"}), 400
+    
+
+
     task_id = str(uuid.uuid4())
     task.tareas[task_id] = {"event": Event(), "result": None, "status": "waiting"}
     

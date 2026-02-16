@@ -11,8 +11,10 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="codigoInput" class="form-label">Código</label>
-                        <input type="text" class="form-control" id="codigoInput" maxlength="11" placeholder="Ej: 26FP36CF567" required>
-                        <div class="invalid-feedback" id="codigoError">Formato inválido. Debe ser: 2números+2letras+2números+2letras+3números.</div>
+                        <input type="text" class="form-control" id="codigoInput" maxlength="11"
+                            placeholder="Ej: 26FP36CF567" required>
+                        <div class="invalid-feedback" id="codigoError">Formato inválido. Debe ser:
+                            2números+2letras+2números+2letras+3números.</div>
                     </div>
 
                     <div class="mb-3">
@@ -38,8 +40,8 @@
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
 <script>
-    (function(){
-        const asesores = ["ALFREDO", "GLORIA", "PACO", "VERA", "GEMMA", "CAMILO", "SANTIAGO", "ANNA", "LOURDES", "LORENA", "PATRICIA", "JOSE", "DAVID"];
+    (function () {
+        const asesores = ["ALFREDO", "GLORIA", "PACO", "VERA", "GEMMA", "CAMILO", "SANTIAGO", "ANNA", "LOURDES", "LORENA", "PATRICIA", "JOSE", "DAVID", "IGNASI"];
         const asesorSelect = document.getElementById('asesorSelect');
         const codigoInput = document.getElementById('codigoInput');
         const form = document.getElementById('formCreaCarpeta');
@@ -57,7 +59,7 @@
         });
 
         // Validación: 2números+2letras+2números+2letras+3números
-        function validaCodigo(v){
+        function validaCodigo(v) {
             v = (v || '').toUpperCase();
             return /^[0-9]{2}[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{3}$/.test(v);
         }
@@ -76,7 +78,7 @@
             asesorSelect.classList.remove('is-invalid');
         });
 
-        form.addEventListener('submit', function(e){
+        form.addEventListener('submit', function (e) {
             e.preventDefault();
             submitError.classList.add('d-none');
             submitSuccess.classList.add('d-none');
@@ -105,7 +107,7 @@
             axios.post('/create_folder', { codigo: codigo, asesor: asesor })
                 .then(resp => {
                     submitSuccess.textContent = resp.data && resp.data.message ? resp.data.message : 'Carpeta creada correctamente.';
-                    
+
                     submitSuccess.classList.remove('d-none');
                     // intenta descargar si la respuesta ya trae el fichero (blob/arraybuffer)
                     function downloadFromResponse(res) {
@@ -134,7 +136,7 @@
                     if (!downloadFromResponse(resp)) {
                         // si la primera respuesta no es el blob, re-solicita con responseType 'blob' y descarga
                         axios.post('/create_folder', { codigo: codigo, asesor: asesor }, { responseType: 'blob' })
-                            .then(r2 => downloadFromResponse(r2) || (function(){
+                            .then(r2 => downloadFromResponse(r2) || (function () {
                                 submitError.textContent = 'No se recibió el fichero para descargar.';
                                 submitError.classList.remove('d-none');
                             })())

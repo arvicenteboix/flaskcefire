@@ -18,8 +18,8 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="asesorSelect" class="form-label">Asesor</label>
-                        <select id="asesorSelect" class="form-select" required></select>
+                        <label for="asesorSelect1" class="form-label">Asesor</label>
+                        <select id="asesorSelect1" class="form-select" required></select>
                         <div class="invalid-feedback" id="asesorError">Seleccione un asesor.</div>
                     </div>
 
@@ -42,7 +42,7 @@
 <script>
     (function () {
         const asesores = ["ALFREDO", "GLORIA", "PACO", "VERA", "GEMMA", "CAMILO", "SANTIAGO", "ANNA", "LOURDES", "LORENA", "PATRICIA", "JOSE", "DAVID", "IGNASI"];
-        const asesorSelect = document.getElementById('asesorSelect');
+        const asesorSelect1 = document.getElementById('asesorSelect1');
         const codigoInput = document.getElementById('codigoInput');
         const form = document.getElementById('formCreaCarpetaSDGFP');
         const codigoError = document.getElementById('codigoError');
@@ -55,7 +55,7 @@
             const opt = document.createElement('option');
             opt.value = a;
             opt.textContent = a;
-            asesorSelect.appendChild(opt);
+            asesorSelect1.appendChild(opt);
         });
 
         // Validación: 2números+2letras+2números+2letras+3números
@@ -74,8 +74,8 @@
             submitSuccess.classList.add('d-none');
         });
 
-        asesorSelect.addEventListener('change', () => {
-            asesorSelect.classList.remove('is-invalid');
+        asesorSelect1.addEventListener('change', () => {
+            asesorSelect1.classList.remove('is-invalid');
         });
 
         form.addEventListener('submit', function (e) {
@@ -84,7 +84,7 @@
             submitSuccess.classList.add('d-none');
 
             const codigo = codigoInput.value.trim().toUpperCase();
-            const asesor = asesorSelect.value;
+            const asesor = asesorSelect1.value;
 
             let ok = true;
             if (!validaCodigo(codigo)) {
@@ -95,10 +95,10 @@
             }
 
             if (!asesor) {
-                asesorSelect.classList.add('is-invalid');
+                asesorSelect1.classList.add('is-invalid');
                 ok = false;
             } else {
-                asesorSelect.classList.remove('is-invalid');
+                asesorSelect1.classList.remove('is-invalid');
             }
 
             if (!ok) return;
@@ -147,7 +147,7 @@
                     }
                     // opcional: cerrar modal después de un rato
                     setTimeout(() => {
-                        const modalEl = document.getElementById('modalCreaFolder');
+                        const modalEl = document.getElementById('modalCreaCarpetaSdgfp');
                         const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
                         modal.hide();
                     }, 1000);

@@ -196,13 +196,18 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                <button type="button" class="btn btn-primary">Guardar</button>
+                <button type="button" class="btn btn-outline-secondary">Netejar</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tancar</button>
+                <button type="button" class="btn btn-primary">Revisar</button>
             </div>
         </div>
     </div>
 </div>
 <script>
+    document.querySelector('#modalPerfil .btn-outline-secondary').addEventListener('click', function () {
+        document.querySelectorAll('#modalPerfil textarea').forEach(textarea => textarea.value = '');
+    });
+
     document.querySelector('#modalPerfil .btn-primary').addEventListener('click', async function () {
         if (document.getElementById('fse').checked) {
             document.getElementById('condicions_val').value = `    1. Acompliment d'un lloc de treball relacionat directament amb la temàtica de l'activitat.

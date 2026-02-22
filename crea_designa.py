@@ -199,12 +199,20 @@ def process_excel(nombre_archivo):
 
 
 
-def generar_certifica_sdgfp(datos, identificativos, numero_a_letras=lambda x:str(x)):
+def generar_certifica_sdgfp(datos, identificativos, campana, numero_a_letras=lambda x:str(x)):
     doc = Document()
     section = doc.sections[0]
     section.top_margin = Cm(1)
     
-    imagen_path = "./a.png"
+
+    if campana == "AAPP":
+        imagen_path = "./aapp.png"
+    elif campana == "PAA":
+        imagen_path = "./paa.png"
+    else:
+        imagen_path = "./a.png"
+
+    
     doc.add_picture(imagen_path, width=Cm(15.0))
 
     estilo = doc.styles['Normal']
@@ -311,7 +319,7 @@ def generar_certifica_sdgfp(datos, identificativos, numero_a_letras=lambda x:str
 # Generar documento Word
 # datos es un diccionario con 'Nombre', 'DNI' y 'Movimientos' (lista de dicts)
 
-def designasdgfp(datos, identificativos, numero_a_letras=lambda x:str(x)):
+def designasdgfp(datos, identificativos, campana, numero_a_letras=lambda x:str(x)):
 
     print("Generando designa SDGFP para:", datos['Nombre'])
 
@@ -323,7 +331,15 @@ def designasdgfp(datos, identificativos, numero_a_letras=lambda x:str(x)):
 
     # imagen_path = resource_path('a.png')
     
-    imagen_path = "./a.png"
+    if campana == "AAPP":
+        imagen_path = "./aapp.png"
+    elif campana == "PAA":
+        imagen_path = "./paa.png"
+    else:
+        imagen_path = "./a.png"
+    
+    
+    
     doc.add_picture(imagen_path, width=Cm(15.0))
 
     estilo = doc.styles['Normal']
@@ -1572,7 +1588,7 @@ def crea_minuta_skills_docx(dades, identificativos):
     return (Buffer, doc_name)
 
 
-def on_process(json_data, hoja_excel, tipo, resultados=None, minuta_datos=None):
+def on_process(json_data, hoja_excel, tipo, resultados=None, minuta_datos=None, campana=None):
         
         fecha = ""
         centre_educatiu = ""
@@ -1649,13 +1665,13 @@ def on_process(json_data, hoja_excel, tipo, resultados=None, minuta_datos=None):
                 elif t == "dessdgfp":
                     buffers4 = []
                     for persona in personas:
-                        buffer, path = designasdgfp(datos=persona, identificativos=hoja_excel)
+                        buffer, path = designasdgfp(datos=persona, identificativos=hoja_excel, campana=campana)
                         buffers4.append((buffer, path))
                     return (buffers4)
                 elif t == "cersdgfp":
                     buffers5 = []
                     for persona in personas:
-                        buffer, path = generar_certifica_sdgfp(datos=persona, identificativos=hoja_excel)
+                        buffer, path = generar_certifica_sdgfp(datos=persona, identificativos=hoja_excel, campana=campana)
                         buffers5.append((buffer, path))
                     return (buffers5)
             

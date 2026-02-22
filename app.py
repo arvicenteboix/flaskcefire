@@ -8,6 +8,8 @@ from flask import send_file
 import crea_designa
 import json
 import correu
+from google.genai import types
+from google import genai
 
 import task
 
@@ -355,13 +357,14 @@ def designessdgfp():
         return redirect(url_for("login"))
     if request.method == "POST":
         archivo = request.files.get("file")
+        campana = request.form.get("campana", "")
         if archivo:
             json_data = crea_designa.process_excel(archivo)
             datos_identificativos = crea_designa.extraer_datos_identificativos(archivo)
             # print("Datos identificativos:", datos_identificativos)
             # buffer, path = crea_designa.on_process(json_data, datos_identificativos, tipo="des")
 
-            result = crea_designa.on_process(json_data, datos_identificativos, tipo="dessdgfp")
+            result = crea_designa.on_process(json_data, datos_identificativos, tipo="dessdgfp", campana=campana)
             print("Result from on_process:", result)
             
             if result is None:
@@ -473,11 +476,12 @@ def certificasdgfp():
         return redirect(url_for("login"))
     if request.method == "POST":
         archivo = request.files.get("file")
+        campana = request.form.get("campana", "")
         if archivo:
             json_data = crea_designa.process_excel(archivo)
             datos_identificativos = crea_designa.extraer_datos_identificativos(archivo)
 
-            result = crea_designa.on_process(json_data, datos_identificativos, tipo="cersdgfp")
+            result = crea_designa.on_process(json_data, datos_identificativos, tipo="cersdgfp", campana=campana)
             print("Result from on_process:", result)
             
             if result is None:
@@ -930,3 +934,29 @@ def comprovaperfil():
     else:
         del task.tareas[task_id]
         return jsonify({"error": "Timeout (120s)"}), 408
+
+@app.route("/imatgedates", methods=["POST"])
+def imatgedates():
+    if not session.get("logged_in"):
+        return redirect(url_for("login"))
+    
+    if request.method == "POST":
+        archivo = request.files.get("file")
+
+        if archivo:
+            GOOGLE_AI_KEY = conn.cursor().execute("SELECT api_key FROM users WHERE id = ?", (session.get("user_id"),)).fetchone()["api_key"]
+            client = genai.Client(api_key=GOOGLE_AI_KEY)
+            image_bytes = archivo.read()
+            response = client.generate_content(
+            model='gemini-2.5-flash',
+            contents=[
+            types.Part.from_bytes(
+                data=image_bytes,
+                mime_type='image/png',
+            ),
+            'Saca los datos que te pido de esta imagen en un json. Con este ejemplo de formato: {"titulo": "", "Fecha inicio": "", "Fecha fin": "", "inicio": "", "fin": "", "confirmacion": ""}. Devuelve solamente los datos en formato JSON, sin explicaciones ni texto adicional.'
+            ]
+        )
+
+    print(response.text)
+    return jsonify(response.text)

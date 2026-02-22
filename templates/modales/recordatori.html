@@ -30,6 +30,16 @@
                         <small class="text-muted d-block mt-2" id="fileName"></small>
                     </div>
 
+                    <div class="mb-3">
+                        <div class="border border-2 border-dashed p-4 text-center" id="dropZone2"
+                            style="cursor: pointer; background-color: #f8f9fa;">
+                            <i class="bi bi-cloud-arrow-up"></i>
+                            <p class="mb-0">Arrossega l'arxiu Imatge aquí o fes clic per seleccionar</p>
+                            <input type="file" id="imatge" accept=".jpg,.jpeg,.png" style="display: none;">
+                        </div>
+                        <small class="text-muted d-block mt-2" id="fileName"></small>
+                    </div>
+
                     <!-- Data Inici -->
                     <div class="mb-3 row">
                         <div class="col-md-12 d-flex align-items-center text-start gap-2 mb-3">
@@ -112,11 +122,63 @@
 
     excelFile.addEventListener('change', updateFileName);
 
+
+    const dropZone2 = document.getElementById('dropZone2');
+    const imatgeFile = document.getElementById('imatge');
+    const imatgeName = document.getElementById('imatgeName');
+
+    dropZone2.addEventListener('click', () => imatgeFile.click());
+    dropZone2.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone2.classList.add('bg-success');
+    });
+    dropZone2.addEventListener('dragleave', () => dropZone2.classList.remove('bg-success'));
+    dropZone2.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone2.classList.remove('bg-success');
+        imatgeFile.files = e.dataTransfer.files;
+        updateImatgeName();
+    });
+
+    imatgeFile.addEventListener('change', updateImatgeName);
+
+
+
+
+
+
     function data(str) {
         const [day, month, year] = str.split('/');
         const fullYear = year.length === 2 ? '20' + year : year;
         return `${fullYear}-${month}-${day}`;
     }
+
+
+
+    function updateImatgeName() {
+        if (imatgeFile.files.length > 0) {
+            const file = imatgeFile.files[0];
+            imatgeName.textContent = `Imatge seleccionada: ${file.name}`;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            axios.post('/imatgedates', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            })
+                .then(response => {
+                    console.log('Dates extracted:', response.data);
+                    document.getElementById('titulo').value = response.data.titulo_accion || '';
+                    document.getElementById('codi').value = response.data.codigo_edicion || '';
+                    document.getElementById('dataInici').value = data(response.data.fecha_inicio) || '';
+                    document.getElementById('dataFi').value = data(response.data.fecha_fin) || '';
+                })
+                .catch(error => console.error('Error uploading file:', error));
+        } else {
+            imatgeName.textContent = '';
+        }
+    }
+
 
     function updateFileName() {
         if (excelFile.files.length > 0) {

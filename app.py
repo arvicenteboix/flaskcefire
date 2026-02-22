@@ -945,18 +945,23 @@ def imatgedates():
 
         if archivo:
             GOOGLE_AI_KEY = conn.cursor().execute("SELECT api_key FROM users WHERE id = ?", (session.get("user_id"),)).fetchone()["api_key"]
+            if not GOOGLE_AI_KEY:
+                return jsonify({"error": "No tens la API key configurada"}), 400
+
             client = genai.Client(api_key=GOOGLE_AI_KEY)
+
             image_bytes = archivo.read()
-            response = client.generate_content(
-            model='gemini-2.5-flash',
+            response = client.models.generate_content(
+            model='gemini-2.5-flash-lite',
             contents=[
             types.Part.from_bytes(
                 data=image_bytes,
                 mime_type='image/png',
             ),
-            'Saca los datos que te pido de esta imagen en un json. Con este ejemplo de formato: {"titulo": "", "Fecha inicio": "", "Fecha fin": "", "inicio": "", "fin": "", "confirmacion": ""}. Devuelve solamente los datos en formato JSON, sin explicaciones ni texto adicional.'
+            'Saca los datos que te pido de esta imagen en un json. Con este ejemplo de formato: {"titulo": "", "codi": "", "fecha_inicio": "", "fecha_fin": "", "inicio": "", "fin": "", "confirmacion": ""}. Devuelve solamente los datos en formato JSON, sin explicaciones ni texto adicional.'
             ]
-        )
+            )
+        resp_text = response.text.replace("```json", "").replace("```", "")
 
-    print(response.text)
-    return jsonify(response.text)
+        print(response.text)
+        return jsonify(resp_text)

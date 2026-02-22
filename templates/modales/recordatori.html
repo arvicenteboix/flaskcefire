@@ -34,10 +34,11 @@
                         <div class="border border-2 border-dashed p-4 text-center" id="dropZone2"
                             style="cursor: pointer; background-color: #f8f9fa;">
                             <i class="bi bi-cloud-arrow-up"></i>
-                            <p class="mb-0">Arrossega l'arxiu Imatge aquí o fes clic per seleccionar</p>
-                            <input type="file" id="imatge" accept=".jpg,.jpeg,.png" style="display: none;">
+                            <p class="mb-0">Arrossega l'arxiu Imatge aquí o fes clic per seleccionar<br>(Cal API de
+                                Google AI Studio)</p>
+                            <input type="file" id="imatge" accept=".png" style="display: none;">
                         </div>
-                        <small class="text-muted d-block mt-2" id="fileName"></small>
+                        <small class="text-muted d-block mt-2" id="imatgeName"></small>
                     </div>
 
                     <!-- Data Inici -->
@@ -148,9 +149,12 @@
 
 
     function data(str) {
-        const [day, month, year] = str.split('/');
+        if (!str) return '';
+        const parts = str.split('/');
+        if (parts.length !== 3) return '';
+        const [day, month, year] = parts;
         const fullYear = year.length === 2 ? '20' + year : year;
-        return `${fullYear}-${month}-${day}`;
+        return `${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
     }
 
 
@@ -167,11 +171,47 @@
                 headers: { 'Content-Type': 'multipart/form-data' }
             })
                 .then(response => {
-                    console.log('Dates extracted:', response.data);
-                    document.getElementById('titulo').value = response.data.titulo_accion || '';
-                    document.getElementById('codi').value = response.data.codigo_edicion || '';
-                    document.getElementById('dataInici').value = data(response.data.fecha_inicio) || '';
-                    document.getElementById('dataFi').value = data(response.data.fecha_fin) || '';
+
+                    const data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+
+                    // Convert date format from dd/MM/yyyy to yyyy-MM-dd
+                    if (data.fecha_inicio) {
+                        data.fecha_inicio = convertDate(data.fecha_inicio);
+                    }
+                    if (data.fecha_fin) {
+                        data.fecha_fin = convertDate(data.fecha_fin);
+                    }
+                    if (data.inicio) {
+                        data.inicio = convertDate(data.inicio);
+                    }
+                    if (data.fin) {
+                        data.fin = convertDate(data.fin);
+                    }
+                    if (data.confirmacion) {
+                        data.confirmacion = convertDate(data.confirmacion);
+                    }
+
+                    function convertDate(dateStr) {
+                        if (!dateStr) return '';
+                        let parts = [];
+                        if (dateStr.includes('-')) {
+                            parts = dateStr.split('-');
+                        } else {
+                            parts = dateStr.split('/');
+                        }
+                        if (parts.length !== 3) return '';
+                        const [day, month, year] = parts;
+                        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                    }
+
+                    console.log('Dates extracted:', data);
+                    document.getElementById('titulo').value = data.titulo || '';
+                    document.getElementById('codi').value = data.codi || '';
+                    document.getElementById('dataInici').value = data.fecha_inicio || '';
+                    document.getElementById('dataFi').value = data.fecha_fin || '';
+                    document.getElementById('dataInscripcio').value = data.inicio || '';
+                    document.getElementById('dataConfirmacio').value = data.fin || '';
+                    document.getElementById('dataLlistes').value = data.confirmacion || '';
                 })
                 .catch(error => console.error('Error uploading file:', error));
         } else {

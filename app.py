@@ -958,7 +958,7 @@ def imatgedates():
                 data=image_bytes,
                 mime_type='image/png',
             ),
-            'Saca los datos que te pido de esta imagen en un json. Con este ejemplo de formato: {"titulo": "", "codi": "", "fecha_inicio": "", "fecha_fin": "", "inicio": "", "fin": "", "confirmacion": ""}. Devuelve solamente los datos en formato JSON, sin explicaciones ni texto adicional.'
+            'Saca los datos que te pido de esta imagen en un json. Con este ejemplo de formato: {"titulo": "", "codi": "", "fecha_inicio": "", "fecha_fin": "", "inicio": "", "fin": "", "confirmacion": ""}. Ten en cuenta que cuando digo codi me refiero a la referencia, que empieza siempre por 26FP... Devuelve solamente los datos en el formato JSON que te he dicho, sin explicaciones ni texto adicional.'
             ]
             )
         resp_text = response.text.replace("```json", "").replace("```", "")

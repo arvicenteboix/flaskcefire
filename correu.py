@@ -46,7 +46,7 @@ def enviar_correus(app, conn):
 
     def envia_david(datos):
         with app.app_context():
-            body = "Hola David, \n\nFormacions que entren en inscripció a dia de hui per a posar en Instagram:\n\n"
+            body = "Hola, \n\nFormacions que entren en inscripció a dia de hui per a posar en Instagram:\n\n"
             for formacion in datos:
                 body += f"Formació: {formacion['codi_ed']} - {formacion['titol']} - Data Inscripció: { datetime.now().strftime('%d/%m/%y')}\n"
 

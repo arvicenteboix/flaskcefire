@@ -11,6 +11,9 @@ import correu
 from google.genai import types
 from google import genai
 
+import eventos.eventos as eventos
+
+
 import task
 
 from threading import Event
@@ -845,6 +848,46 @@ def recordatoridates():
                 )
             )
             conn.commit()
+
+            # CORREO QUE SE ENVÍA AL USUARIO CON LOS RECORDATORIOS DE LAS FECHAS IMPORTANTES DEL CURSO
+
+            lista_eventos=[
+                {
+                    "fecha": data.get("dataInici"),
+                    "titulo": data.get("titulo"),
+                    "descripcion": f"INICIO DEL CURSO {data.get('codi')} - {data.get('titulo')}",
+                },
+                {
+                    "fecha": data.get("dataFi"), 
+                    "titulo": data.get("titulo"),
+                    "descripcion": f"FIN DEL CURSO {data.get('codi')} - {data.get('titulo')}",
+                },
+                {
+                    "fecha": data.get("dataInscripcio"),
+                    "titulo": data.get("titulo"),
+                    "descripcion": f"INSCRIPCIÓN DEL CURSO {data.get('codi')} - {data.get('titulo')}",
+                },
+                {
+                    "fecha": data.get("dataConfirmacio"),
+                    "titulo": data.get("titulo"),
+                    "descripcion": f"CONFIRMACIÓN DEL CURSO {data.get('codi')} - {data.get('titulo')}",
+                },
+                {
+                    "fecha": data.get("dataLlistes"),
+                    "titulo": data.get("titulo"),
+                    "descripcion": f"LISTAS DEL CURSO {data.get('codi')} - {data.get('titulo')}",
+                }
+            ]
+
+
+            destinatario = cursor.execute("SELECT email FROM users WHERE id = ?", (session.get("user_id"),)).fetchone()["email"]
+
+            correu.add_calendar_multiples(app, destinatario, lista_eventos)
+
+
+
+
+
             return jsonify({"success": True, "message": "Recordatori guardat"}), 200
         except sqlite3.Error as e:
             return jsonify({"error": str(e)}), 400
@@ -912,3 +955,4 @@ def imatgedates():
 
         print(response.text)
         return jsonify(resp_text)
+    

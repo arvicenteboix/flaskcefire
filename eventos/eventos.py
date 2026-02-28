@@ -129,24 +129,33 @@ if __name__ == "__main__":
         lugar="Lugar único",         # No se usa si pasas lista_eventos
         destinatario="ar.vicenteboix@edu.gva.es",
         api_key="TU_API_KEY_DE_GMAIL",
+
+
         lista_eventos=[
             {
-                "fecha": "15-03-2026",
-                "titulo": "Sesión FP Mañana",
-                "descripcion": "Formación profesores ciclo DAM",
-                "lugar": "CEFIRE Valencia - Sala 1"
+                "fecha": data.get("dataInici"),
+                "titulo": data.get("titulo"),
+                "descripcion": f"INICIO DEL CURSO {data.get('codi')} - {data.get('titulo')}",
             },
             {
-                "fecha": "16-03-2026", 
-                "titulo": "Sesión FP Tarde",
-                "descripcion": "Formación profesores ciclo DAW",
-                "lugar": "CEFIRE Valencia - Sala 2"
+                "fecha": data.get("dataFi"), 
+                "titulo": data.get("titulo"),
+                "descripcion": f"FIN DEL CURSO {data.get('codi')} - {data.get('titulo')}",
             },
             {
-                "fecha": "20-03-2026",
-                "titulo": "Taller Certificaciones",
-                "descripcion": "Habilidades profesionales FP",
-                "lugar": "Online via Teams"
+                "fecha": data.get("dataInscripcio"),
+                "titulo": data.get("titulo"),
+                "descripcion": f"INSCRIPCIÓN DEL CURSO {data.get('codi')} - {data.get('titulo')}",
+            },
+            {
+                "fecha": data.get("dataConfirmacio"),
+                "titulo": data.get("titulo"),
+                "descripcion": f"CONFIRMACIÓN DEL CURSO {data.get('codi')} - {data.get('titulo')}",
+            },
+            {
+                "fecha": data.get("dataLlistes"),
+                "titulo": data.get("titulo"),
+                "descripcion": f"LISTAS DEL CURSO {data.get('codi')} - {data.get('titulo')}",
             }
         ]
     )

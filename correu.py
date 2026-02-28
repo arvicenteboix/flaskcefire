@@ -4,7 +4,15 @@ from apscheduler.schedulers.background import BackgroundScheduler
 import atexit
 from datetime import datetime
 
-
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
+from datetime import datetime, date
+from icalendar import Calendar, Event
+import pytz
+import os
 
 # Llistat d'exemple de correus
 mail = None
@@ -117,3 +125,118 @@ def init_mail_and_scheduler(app, conn):
     # Aturar scheduler quan es tanque l'app
     atexit.register(lambda: scheduler.shutdown(wait=False))
     return mail, scheduler
+
+
+
+def add_calendar_multiples(app, destinatario, lista_eventos=None):
+    """
+    Envía correo con archivo .ics que contiene MÚLTIPLES eventos de todo el día
+    
+    lista_eventos = [
+        {"fecha": "15-03-2026", "titulo": "Evento 1", "descripcion": "Desc 1", "lugar": "Lugar 1"},
+        {"fecha": "16-03-2026", "titulo": "Evento 2", "descripcion": "Desc 2", "lugar": "Lugar 2"},
+        ...
+    ]
+    """
+    
+    def fecha_ics_allday(fecha_str):
+        """Convierte dd-MM-yyyy a fecha de TODO EL DÍA para ICS"""
+        fecha_dt = datetime.strptime(fecha_str, "%d-%m-%Y").date()
+        return fecha_dt
+
+
+
+    # Crear calendario ICS con MÚLTIPLES eventos
+    cal = Calendar()
+    
+    for evento_data in lista_eventos:
+        evento = Event()
+        evento.add('summary', evento_data['titulo'])
+        evento.add('description', evento_data['descripcion'])
+        fecha_evento = fecha_ics_allday(evento_data['fecha'])
+        evento.add('dtstart', fecha_evento)  # Todo el día
+        evento.add('dtend', fecha_evento)    # Mismo día
+        evento.add('dtstamp', pytz.UTC.localize(datetime.now()))
+        evento.add('transp', 'TRANSPARENT')  # No ocupa slot horario
+        
+        cal.add_component(evento)
+
+    # Guardar archivo ICS
+    nombre_archivo = 'calendario_multi.ics'
+    with open(nombre_archivo, 'wb') as f:
+        f.write(cal.to_ical())
+
+    # CONFIGURACIÓN CORREO
+    remitente = 'valenciacefire@gmail.com'
+    asunto = f'Calendario con {len(lista_eventos)} eventos'
+    cuerpo = f"""
+Hola,
+
+Adjunto el archivo .ics con {len(lista_eventos)} eventos de TODO EL DÍA:
+
+"""
+    
+    for i, evento in enumerate(lista_eventos, 1):
+        cuerpo += f"{i}. {evento['titulo']} - {evento['fecha']} ({evento['lugar']})\n"
+
+    cuerpo += f"""
+Abre el adjunto para añadir TODOS los eventos a Outlook, Google Calendar, etc.
+
+Saludos,
+Tu sistema automático
+    """
+    destinatario = "alviboi@gmail.com"
+    # Crear mensaje email
+    '''
+    msg = MIMEMultipart()
+    msg['From'] = remitente
+    msg['To'] = destinatario
+    msg['Subject'] = asunto
+    msg.attach(MIMEText(cuerpo, 'plain', 'utf-8'))
+
+    # Adjuntar ICS
+    with open(nombre_archivo, 'rb') as adjunto:
+        parte = MIMEBase('application', 'octet-stream')
+        parte.set_payload(adjunto.read())
+    encoders.encode_base64(parte)
+    parte.add_header(
+        'Content-Disposition',
+        f'attachment; filename="calendario_multiples.ics"'
+    )
+    parte.add_header('Content-Type', f'text/calendar; name="calendario_multiples.ics"')
+    msg.attach(parte)
+
+    '''
+
+    # ENVIAR CORREO con Mail
+    with app.app_context():
+        try:
+            message = Message(
+                subject=asunto,
+                sender=remitente,
+                recipients=[destinatario],
+                body=cuerpo
+            )
+            
+            # Adjuntar ICS
+            with open(nombre_archivo, 'rb') as adjunto:
+                message.attach(
+                    filename='calendario_multiples.ics',
+                    content_type='text/calendar',
+                    data=adjunto.read()
+                )
+            
+            mail.send(message)
+            
+            print("✅ Correo enviado correctamente")
+            print(f"📅 {len(lista_eventos)} eventos enviados:")
+            for evento in lista_eventos:
+                print(f"   - {evento['titulo']} ({evento['fecha']})")
+            
+        except Exception as e:
+            print(f"❌ Error: {e}")
+
+        finally:
+            # Limpiar archivo temporal
+            if os.path.exists(nombre_archivo):
+                os.remove(nombre_archivo)

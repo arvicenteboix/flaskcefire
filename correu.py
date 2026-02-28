@@ -159,8 +159,9 @@ def add_calendar_multiples(app, destinatario, lista_eventos=None):
         
         cal.add_component(evento)
 
+    asunto = f'Calendario del curso {lista_eventos[0]["titulo"].replace("INICIO DEL CURSO ", "")}'
     # Guardar archivo ICS
-    nombre_archivo = f'calendario_{lista_eventos[0]["titulo"].replace(" ", "_")}.ics'
+    nombre_archivo = f'{asunto.replace(" ", "_")}.ics'
     with open(nombre_archivo, 'wb') as f:
         f.write(cal.to_ical())
 

@@ -854,33 +854,35 @@ def recordatoridates():
             lista_eventos=[
                 {
                     "fecha": data.get("dataInici"),
-                    "titulo": data.get("titulo"),
+                    "titulo": f"INICIO DEL CURSO {data.get('codi')} - {data.get('titulo')}",
                     "descripcion": f"INICIO DEL CURSO {data.get('codi')} - {data.get('titulo')}",
                 },
                 {
                     "fecha": data.get("dataFi"), 
-                    "titulo": data.get("titulo"),
+                    "titulo": f"FIN DEL CURSO {data.get('codi')} - {data.get('titulo')}",
                     "descripcion": f"FIN DEL CURSO {data.get('codi')} - {data.get('titulo')}",
                 },
                 {
                     "fecha": data.get("dataInscripcio"),
-                    "titulo": data.get("titulo"),
-                    "descripcion": f"INSCRIPCIÓN DEL CURSO {data.get('codi')} - {data.get('titulo')}",
+                    "titulo": f"INSCRIPCIÓN DEL CURSO {data.get('codi')} - {data.get('titulo')}",
+                    "descripcion": f"Si no ho has modificat en la APP demà comença la inscripció del curs: INSCRIPCIÓN DEL CURSO {data.get('codi')} - {data.get('titulo')}.",
                 },
                 {
                     "fecha": data.get("dataConfirmacio"),
-                    "titulo": data.get("titulo"),
-                    "descripcion": f"CONFIRMACIÓN DEL CURSO {data.get('codi')} - {data.get('titulo')}",
+                    "titulo": f"CONFIRMACIÓN DEL CURSO {data.get('codi')} - {data.get('titulo')}",
+                    "descripcion": f"Si no ho has modificat en la APP demà comença la fase de confirmació del curs {data.get('codi')} - {data.get('titulo')}. Per tant cal que vages fent la llista de baremacions. Recorda que tens un correu model a https://cefirefp.github.io/docs/gestioformacions/preparar/#fase-de-confirmacio, Gesform et permet enviar un correu de manera automàtica.",
                 },
                 {
                     "fecha": data.get("dataLlistes"),
-                    "titulo": data.get("titulo"),
-                    "descripcion": f"LISTAS DEL CURSO {data.get('codi')} - {data.get('titulo')}",
+                    "titulo": f"LISTAS DEL CURSO {data.get('codi')} - {data.get('titulo')}",
+                    "descripcion": f"Si no ho has modificat en la APP demà comença la fase de llistes del curs {data.get('codi')} - {data.get('titulo')}. Recorda que has d'importar els participants a Gesform i enviar les llistes de participants a la DGFP. Recorda que tens un correu model a https://cefirefp.github.io/docs/gestioformacions/preparar/#publicacio-del-llistat-definitiu, Gesform NO envia un correu de manera automàtica, per tant cal que envies tú el correu.",
                 }
             ]
 
 
             destinatario = cursor.execute("SELECT email FROM users WHERE id = ?", (session.get("user_id"),)).fetchone()["email"]
+
+            print("Destinatario del correo:", destinatario)
 
             correu.add_calendar_multiples(app, destinatario, lista_eventos)
 

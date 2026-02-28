@@ -129,6 +129,9 @@ def init_mail_and_scheduler(app, conn):
 
 
 def add_calendar_multiples(app, destinatario, lista_eventos=None):
+
+    print("🚀 Enviando correo con calendario múltiple...")
+
     """
     Envía correo con archivo .ics que contiene MÚLTIPLES eventos de todo el día
     
@@ -141,7 +144,7 @@ def add_calendar_multiples(app, destinatario, lista_eventos=None):
     
     def fecha_ics_allday(fecha_str):
         """Convierte dd-MM-yyyy a fecha de TODO EL DÍA para ICS"""
-        fecha_dt = datetime.strptime(fecha_str, "%d-%m-%Y").date()
+        fecha_dt = datetime.strptime(fecha_str, "%Y-%m-%d").date()
         return fecha_dt
 
 
@@ -162,30 +165,25 @@ def add_calendar_multiples(app, destinatario, lista_eventos=None):
         cal.add_component(evento)
 
     # Guardar archivo ICS
-    nombre_archivo = 'calendario_multi.ics'
+    nombre_archivo = f'calendario_{lista_eventos[0]["titulo"].replace(" ", "_")}.ics'
     with open(nombre_archivo, 'wb') as f:
         f.write(cal.to_ical())
 
+    asunto = f'Calendario del curso {lista_eventos[0]["titulo"].replace("INICIO DEL CURSO ", "")}'
     # CONFIGURACIÓN CORREO
     remitente = 'valenciacefire@gmail.com'
-    asunto = f'Calendario con {len(lista_eventos)} eventos'
+    # asunto = f'Calendario del curso {lista_eventos[0]["titulo"]}'
     cuerpo = f"""
 Hola,
 
-Adjunto el archivo .ics con {len(lista_eventos)} eventos de TODO EL DÍA:
+Adjunto el archivo .ics para el curso {lista_eventos[0]['titulo']} y sus eventos relacionados.:
 
-"""
-    
-    for i, evento in enumerate(lista_eventos, 1):
-        cuerpo += f"{i}. {evento['titulo']} - {evento['fecha']} ({evento['lugar']})\n"
-
-    cuerpo += f"""
 Abre el adjunto para añadir TODOS los eventos a Outlook, Google Calendar, etc.
 
 Saludos,
-Tu sistema automático
+
     """
-    destinatario = "alviboi@gmail.com"
+    # destinatario = "ar.vicenteboix@edu.gva.es"
     # Crear mensaje email
     '''
     msg = MIMEMultipart()
@@ -201,9 +199,9 @@ Tu sistema automático
     encoders.encode_base64(parte)
     parte.add_header(
         'Content-Disposition',
-        f'attachment; filename="calendario_multiples.ics"'
+        f'attachment; filename="{nombre_archivo}"'
     )
-    parte.add_header('Content-Type', f'text/calendar; name="calendario_multiples.ics"')
+    parte.add_header('Content-Type', f'text/calendar; name="{nombre_archivo}"')
     msg.attach(parte)
 
     '''
@@ -221,18 +219,18 @@ Tu sistema automático
             # Adjuntar ICS
             with open(nombre_archivo, 'rb') as adjunto:
                 message.attach(
-                    filename='calendario_multiples.ics',
+                    filename=nombre_archivo,
                     content_type='text/calendar',
                     data=adjunto.read()
                 )
-            
+            # Enviar correo
             mail.send(message)
-            
+            '''
             print("✅ Correo enviado correctamente")
             print(f"📅 {len(lista_eventos)} eventos enviados:")
             for evento in lista_eventos:
                 print(f"   - {evento['titulo']} ({evento['fecha']})")
-            
+            '''
         except Exception as e:
             print(f"❌ Error: {e}")
 

@@ -134,27 +134,27 @@ if __name__ == "__main__":
         lista_eventos=[
             {
                 "fecha": data.get("dataInici"),
-                "titulo": data.get("titulo"),
-                "descripcion": f"INICIO DEL CURSO {data.get('codi')} - {data.get('titulo')}",
+                "titulo": f"INICIO DEL CURSO {data.get('codi')} - {data.get('titulo')}",
+                "descripcion": f"INICIO DEL CURSO {data.get('codi')} - {data.get('titulo')}.",
             },
             {
                 "fecha": data.get("dataFi"), 
-                "titulo": data.get("titulo"),
-                "descripcion": f"FIN DEL CURSO {data.get('codi')} - {data.get('titulo')}",
+                "titulo": f"FIN DEL CURSO {data.get('codi')} - {data.get('titulo')}",
+                "descripcion": f"FIN DEL CURSO {data.get('codi')} - {data.get('titulo')}.",
             },
             {
                 "fecha": data.get("dataInscripcio"),
-                "titulo": data.get("titulo"),
+                "titulo": f"INSCRIPCIÓN DEL CURSO {data.get('codi')} - {data.get('titulo')}",
                 "descripcion": f"INSCRIPCIÓN DEL CURSO {data.get('codi')} - {data.get('titulo')}",
             },
             {
                 "fecha": data.get("dataConfirmacio"),
-                "titulo": data.get("titulo"),
+                "titulo": f"CONFIRMACIÓN DEL CURSO {data.get('codi')} - {data.get('titulo')}",
                 "descripcion": f"CONFIRMACIÓN DEL CURSO {data.get('codi')} - {data.get('titulo')}",
             },
             {
                 "fecha": data.get("dataLlistes"),
-                "titulo": data.get("titulo"),
+                "titulo": f"LISTAS DEL CURSO {data.get('codi')} - {data.get('titulo')}",
                 "descripcion": f"LISTAS DEL CURSO {data.get('codi')} - {data.get('titulo')}",
             }
         ]

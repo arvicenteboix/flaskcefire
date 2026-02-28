@@ -122,40 +122,40 @@ Tu sistema automático
 
 if __name__ == "__main__":
     # EJEMPLO 1: Múltiples eventos
-    add_calendar_multiples(
-        fecha_usuario="15-03-2026",  # No se usa si pasas lista_eventos
-        titulo="Evento único",       # No se usa si pasas lista_eventos
-        descripcion="Desc único",    # No se usa si pasas lista_eventos
-        lugar="Lugar único",         # No se usa si pasas lista_eventos
-        destinatario="ar.vicenteboix@edu.gva.es",
-        api_key="TU_API_KEY_DE_GMAIL",
+    def add_calendar_multiples(fecha_usuario, titulo, descripcion, lugar, destinatario, api_key, lista_eventos=None, color=None):
+        """
+        Envía correo con archivo .ics que contiene MÚLTIPLES eventos de todo el día
+        
+        color: código hex del color (ej: "#FF0000" para rojo)
+        """
+        
+        def fecha_ics_allday(fecha_str):
+            """Convierte dd-MM-yyyy a fecha de TODO EL DÍA para ICS"""
+            fecha_dt = datetime.strptime(fecha_str, "%d-%m-%Y").date()
+            return fecha_dt
 
+        if lista_eventos is None:
+            lista_eventos = [{
+                "fecha": fecha_usuario,
+                "titulo": titulo,
+                "descripcion": descripcion,
+                "lugar": lugar
+            }]
 
-        lista_eventos=[
-            {
-                "fecha": data.get("dataInici"),
-                "titulo": f"INICIO DEL CURSO {data.get('codi')} - {data.get('titulo')}",
-                "descripcion": f"INICIO DEL CURSO {data.get('codi')} - {data.get('titulo')}.",
-            },
-            {
-                "fecha": data.get("dataFi"), 
-                "titulo": f"FIN DEL CURSO {data.get('codi')} - {data.get('titulo')}",
-                "descripcion": f"FIN DEL CURSO {data.get('codi')} - {data.get('titulo')}.",
-            },
-            {
-                "fecha": data.get("dataInscripcio"),
-                "titulo": f"INSCRIPCIÓN DEL CURSO {data.get('codi')} - {data.get('titulo')}",
-                "descripcion": f"INSCRIPCIÓN DEL CURSO {data.get('codi')} - {data.get('titulo')}",
-            },
-            {
-                "fecha": data.get("dataConfirmacio"),
-                "titulo": f"CONFIRMACIÓN DEL CURSO {data.get('codi')} - {data.get('titulo')}",
-                "descripcion": f"CONFIRMACIÓN DEL CURSO {data.get('codi')} - {data.get('titulo')}",
-            },
-            {
-                "fecha": data.get("dataLlistes"),
-                "titulo": f"LISTAS DEL CURSO {data.get('codi')} - {data.get('titulo')}",
-                "descripcion": f"LISTAS DEL CURSO {data.get('codi')} - {data.get('titulo')}",
-            }
-        ]
-    )
+        cal = Calendar()
+        
+        for evento_data in lista_eventos:
+            evento = Event()
+            evento.add('summary', evento_data['titulo'])
+            evento.add('description', evento_data['descripcion'])
+            evento.add('location', evento_data['lugar'])
+            fecha_evento = fecha_ics_allday(evento_data['fecha'])
+            evento.add('dtstart', fecha_evento)
+            evento.add('dtend', fecha_evento)
+            evento.add('dtstamp', pytz.UTC.localize(datetime.now()))
+            evento.add('transp', 'TRANSPARENT')
+            evento.add('color', evento_data.get('color', color or '#3498db'))  # Azul por defecto
+            
+            cal.add_component(evento)
+
+        # Resto del código igual...

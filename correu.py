@@ -143,7 +143,6 @@ def add_calendar_multiples(app, destinatario, lista_eventos=None):
         return fecha_dt
 
 
-
     # Crear calendario ICS con MÚLTIPLES eventos
     cal = Calendar()
     
@@ -156,6 +155,7 @@ def add_calendar_multiples(app, destinatario, lista_eventos=None):
         evento.add('dtend', fecha_evento)    # Mismo día
         evento.add('dtstamp', pytz.UTC.localize(datetime.now()))
         evento.add('transp', 'TRANSPARENT')  # No ocupa slot horario
+        evento.add('CATEGORIES', 'Categoría Roja') 
         
         cal.add_component(evento)
 

@@ -4,11 +4,6 @@ from apscheduler.schedulers.background import BackgroundScheduler
 import atexit
 from datetime import datetime
 
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.base import MIMEBase
-from email import encoders
 from datetime import datetime, date
 from icalendar import Calendar, Event
 import pytz
@@ -183,29 +178,6 @@ Abre el adjunto para añadir TODOS los eventos a Outlook, Google Calendar, etc.
 Saludos,
 
     """
-    # destinatario = "ar.vicenteboix@edu.gva.es"
-    # Crear mensaje email
-    '''
-    msg = MIMEMultipart()
-    msg['From'] = remitente
-    msg['To'] = destinatario
-    msg['Subject'] = asunto
-    msg.attach(MIMEText(cuerpo, 'plain', 'utf-8'))
-
-    # Adjuntar ICS
-    with open(nombre_archivo, 'rb') as adjunto:
-        parte = MIMEBase('application', 'octet-stream')
-        parte.set_payload(adjunto.read())
-    encoders.encode_base64(parte)
-    parte.add_header(
-        'Content-Disposition',
-        f'attachment; filename="{nombre_archivo}"'
-    )
-    parte.add_header('Content-Type', f'text/calendar; name="{nombre_archivo}"')
-    msg.attach(parte)
-
-    '''
-
     # ENVIAR CORREO con Mail
     with app.app_context():
         try:

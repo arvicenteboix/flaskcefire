@@ -262,6 +262,9 @@ def generar_certifica_sdgfp(datos, identificativos, campana, numero_a_letras=lam
     if juridico == "funcionario gva":
         aplicacion = "233.02"
         juridico = "funcionari"
+    elif juridico == "no funcionario":
+        aplicacion = "226.06"
+        juridico = "no funcionari"
     else:
         aplicacion = "226.06"
 
@@ -389,6 +392,9 @@ def designasdgfp(datos, identificativos, campana, numero_a_letras=lambda x:str(x
     if juridico == "funcionario gva":
         aplicacion = "233.02"
         juridico = "funcionari"
+    elif juridico == "no funcionario":
+        aplicacion = "226.06"
+        juridico = "no funcionari"
     else:
         aplicacion = "226.06"
 

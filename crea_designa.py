@@ -254,17 +254,22 @@ def generar_certifica_sdgfp(datos, identificativos, campana, numero_a_letras=lam
                 pagament_text = " REVISAR TIPO INTERVENCIÓ"
         else:
             pagament_text = f" hores a {str(mov.get('TARIFICACIÓN APLICADA (€)', '')).lower()} euros/hora"
-        partes.append(str(mov.get('UNIDADES/UNITATS', '')).lower() + pagament_text + " en concepte de " + str(mov.get("TIPO DE INTERVENCIÓN*/ TIPUS D'INTERVENCIÓ*", "")).lower())
+        
+        tipo = mov.get("TIPO DE INTERVENCIÓN*/ TIPUS D'INTERVENCIÓ*", "")
+        tipo = "formació síncrona" if tipo.lower() == "síncrona" else tipo
+
+        
+        partes.append(str(mov.get('UNIDADES/UNITATS', '')).lower() + pagament_text + " en concepte de " + tipo.lower())
 
     cadena_movs = ", ".join(partes)
     # Determinar el código de aplicación según el campo 'JURÍDICO'
     juridico = str(movimientos[0].get('JURÍDICO', '')).strip().lower()
     if juridico == "funcionario gva":
         aplicacion = "233.02"
-        juridico = "funcionari"
+        juridico = "docent funcionari"
     elif juridico == "no funcionario":
         aplicacion = "226.06"
-        juridico = "no funcionari"
+        juridico = "persona no funcionària"
     else:
         aplicacion = "226.06"
 
@@ -384,17 +389,21 @@ def designasdgfp(datos, identificativos, campana, numero_a_letras=lambda x:str(x
                 pagament_text = " REVISAR TIPO INTERVENCIÓ"
         else:
             pagament_text = f" hores a {str(mov.get('TARIFICACIÓN APLICADA (€)', '')).lower()} euros/hora"
-        partes.append(str(mov.get('UNIDADES/UNITATS', '')).lower() + pagament_text + " en concepte de " + str(mov.get("TIPO DE INTERVENCIÓN*/ TIPUS D'INTERVENCIÓ*", "")).lower())
+
+        tipo = mov.get("TIPO DE INTERVENCIÓN*/ TIPUS D'INTERVENCIÓ*", "")
+        tipo = "formació síncrona" if tipo.lower() == "síncrona" else tipo
+        
+        partes.append(str(mov.get('UNIDADES/UNITATS', '')).lower() + pagament_text + " en concepte de " + tipo.lower())
 
     cadena_movs = ", ".join(partes)
     # Determinar el código de aplicación según el campo 'JURÍDICO'
     juridico = str(movimientos[0].get('JURÍDICO', '')).strip().lower()
     if juridico == "funcionario gva":
         aplicacion = "233.02"
-        juridico = "funcionari"
+        juridico = "docent funcionari"
     elif juridico == "no funcionario":
         aplicacion = "226.06"
-        juridico = "no funcionari"
+        juridico = "persona no funcionària"
     else:
         aplicacion = "226.06"
 

@@ -17,7 +17,13 @@
       <i class="fa-solid fa-calendar" style="font-size:2.5rem;" aria-hidden="true"></i><br>Mail recordatori
     </button>
   </div>
-    <div class="col">
+  <div class="col">
+    <button type="button" class="btn btn-success btn-lg w-100 border" aria-disabled="true" tabindex="-1"
+      data-bs-toggle="modal" data-bs-target="#modalguacamoleLabel">
+      <i class="fa-solid fa-seedling" style="font-size:2.5rem;" aria-hidden="true"></i><br>Guacamole
+    </button>
+  </div>
+  <div class="col">
     <button type="button" class="btn btn-dark btn-lg w-100 border" aria-disabled="true" tabindex="-1"
       data-bs-toggle="modal" data-bs-target="#modalPerfil">
       <i class="fa-solid fa-book-open" style="font-size:2.5rem;" aria-hidden="true"></i><br>Perfil Gesform
@@ -29,4 +35,5 @@
   {% include 'modales/recordatori.html' %}
   {% include 'modales/modal_crea_carpeta_sdgfp.html' %}
   {% include 'modales/modal_perfil.html' %}
+  {% include 'modales/modal_guaca.html' %}
 </div>

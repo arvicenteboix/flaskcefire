@@ -1,0 +1,61 @@
+<!-- templates/modales/modal_doc.html -->
+<!-- Modal trigger -->
+
+<!-- Modal -->
+<div class="modal fade" id="modalguacamoleLabel" tabindex="-1" aria-labelledby="modalguacamoleLabel" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalguacamoleLabel">Guacamole</h5>
+                <button type="button" class="btn btn-sm btn-outline-secondary ms-2" id="fullscreenBtn" title="Pantalla completa">
+                    <i class="fa-solid fa-up-right-and-down-left-from-center"></i> Pantalla completa
+                </button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body p-0">
+                <iframe id="docsIframe"
+                                data-src="https://fp.cefire.eu/guacamole/#/"
+                                src=""
+                                allowfullscreen
+                                style="width:100%; height:100vh; border:0;"
+                                title="Guacamole"></iframe>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var fullscreenBtn = document.getElementById('fullscreenBtn');
+    var iframe = document.getElementById('docsIframe');
+    var modal = document.getElementById('modalguacamoleLabel');
+    
+    fullscreenBtn.addEventListener('click', function () {
+        if (iframe.requestFullscreen) {
+            iframe.requestFullscreen();
+        } else if (iframe.webkitRequestFullscreen) {
+            iframe.webkitRequestFullscreen();
+        }
+    });
+});
+</script>
+
+<!-- Script: carga el iframe al abrir y lo limpia al cerrar -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var modalEl = document.getElementById('modalguacamoleLabel');
+    var iframe = document.getElementById('docsIframe');
+    if (!modalEl || !iframe) return;
+    modalEl.addEventListener('shown.bs.modal', function () {
+        if (!iframe.getAttribute('src')) {
+            iframe.src = iframe.dataset.src || '';
+        }
+    });
+    modalEl.addEventListener('hidden.bs.modal', function () {
+        iframe.removeAttribute('src');
+    });
+});
+</script>

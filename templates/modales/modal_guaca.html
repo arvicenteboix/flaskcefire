@@ -13,7 +13,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <div class="modal-body p-0">
-                <iframe id="docsIframe"
+                <iframe id="docsIframe2"
                                 data-src="https://fp.cefire.eu/guacamole/#/"
                                 src=""
                                 allowfullscreen
@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', function () {
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     var modalEl = document.getElementById('modalguacamoleLabel');
-    var iframe = document.getElementById('docsIframe');
+    var iframe = document.getElementById('docsIframe2');
     if (!modalEl || !iframe) return;
     modalEl.addEventListener('shown.bs.modal', function () {
         if (!iframe.getAttribute('src')) {

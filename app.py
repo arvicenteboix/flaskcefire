@@ -306,7 +306,7 @@ def designes():
         if archivo:
             json_data = crea_designa.process_excel(archivo)
             datos_identificativos = crea_designa.extraer_datos_identificativos(archivo)
-            # print("Datos identificativos:", datos_identificativos)
+            print("Datos identificativos:", datos_identificativos)
             # buffer, path = crea_designa.on_process(json_data, datos_identificativos, tipo="des")
 
             result = crea_designa.on_process(json_data, datos_identificativos, tipo="des")

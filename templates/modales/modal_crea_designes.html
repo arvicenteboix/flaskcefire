@@ -19,6 +19,7 @@
 </style>
 
 
+
 <div class="modal fade" id="modalCreaDesignes" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -49,9 +50,16 @@
     </div>
   </div>
 </div>
-
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
   (() => {
+
+    const identFields = ["CONVOCATORIA / CONVOCATÒRIA (AAPP, FSE, PAA, etc.)", "ASESORÍA RESPONSABLE / ASSESSORIA RESPONSABLE", "CÓDIGO EDICIÓN / CODI EDICIÓ", "TÍTULO ACCIÓN FORMATIVA / TÍTOL ACCIÓ FORMATIVA", "NÚMERO HORAS TOTALES / Nº HORES TOTALS", "FECHAS REALIZACIÓN / DATES REALITZACIÓ", "MODALIDAD/MODALITAT (ON LINE/SEMIPRESENCIAL/PRESENCIAL)", "TIPO DE FORMACIÓN (CURSO / TALLER / JORNADA / CONGRESO)", "Nº PARTICIPANTES / NOMBRE PARTICIPANTS", "PRESUPUESTO / PRESSUPOST"];
+
+    const intervFields = ["NOMBRE Y APELLIDOS o EMPRESA / NOM I COGNOMS o EMPRESA", "DNI / CIF", "JURÍDICO", "MINUTA / DIETA / FACTURA/ MATERIAL", "TIPO DE INTERVENCIÓN*/ TIPUS D'INTERVENCIÓ*", "UNIDADES/UNITATS", "Solo en caso de tutorización indicar Nº ALUMNOS/AS TUTORIZADOS", "TARIFICACIÓN APLICADA (€)", "IMPORTE / IMPORT (€)"];
+    let extracted = null;
+
+
     let selectedFile = null;
     let currentAction = null;
     const dropzone = document.getElementById('dropzone');
@@ -64,10 +72,280 @@
       resolc: document.getElementById('btnGeneraResolcDGFP')
     };
 
-    function setFile(file) {
+    function cellText(ws, addr) {
+      const c = ws[addr];
+      if (!c || c.v === undefined || c.v === null) return '';
+      return String(c.w ?? c.v).trim();
+    }
+
+
+
+    function extractData(workbook) {
+      const ws = workbook.Sheets[workbook.SheetNames[0]];
+      const identificativos = {};
+      identFields.forEach((label, idx) => {
+        identificativos[label] = cellText(ws, `D${idx + 11}`);
+      });
+
+      const intervinientes = [];
+      for (let r = 23; r <= 1000; r++) {
+        const rowVals = [];
+        for (let c = 2; c <= 10; c++) {
+          rowVals.push(cellText(ws, `${XLSX.utils.encode_col(c)}${r}`));
+        }
+        if (rowVals.every(v => v === '')) break;
+        if (rowVals[0] === '') continue;
+        intervinientes.push(Object.fromEntries(intervFields.map((k, i) => [k, rowVals[i]])));
+      }
+
+      return { identificativos, intervinientes };
+    }
+
+
+    function comprovafiledatos(file_comprova) {
+      //alert("Comprovant");
+      console.log('Archivo seleccionado:', file_comprova);
+      const wb = XLSX.read(file_comprova, { type: 'array', cellDates: true });
+      console.log('Archivo leído como workbook:', wb);
+      extracted = extractData(wb);
+
+      console.log('Datos extraídos:', extracted);
+
+      // Validar que las horas totales coinciden con la suma de horas de intervinientes
+      const errores = [];
+
+      const parseNumber = (v) => {
+        if (v === null || v === undefined) return 0;
+        const s = String(v).trim()
+          .replace(/\./g, '')      // miles
+          .replace(',', '.')       // decimal
+          .replace(/[^\d.-]/g, ''); // limpiar texto
+        const n = parseFloat(s);
+        return Number.isFinite(n) ? n : 0;
+      };
+
+      const normalize = (v) => (v || '')
+        .toString()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toUpperCase()
+        .trim();
+
+      const horasTotales = parseNumber(
+        extracted?.identificativos?.["NÚMERO HORAS TOTALES / Nº HORES TOTALS"]
+      );
+
+      const sumaHorasIntervinientes = (extracted?.intervinientes || []).reduce((acc, it) => {
+        return acc + parseNumber(it["UNIDADES/UNITATS"]);
+      }, 0);
+
+      if (Math.abs(horasTotales - sumaHorasIntervinientes) > 0.001) {
+        errores.push('Las horas no cuadran.\nTotal en el Excel: ' + horasTotales + '\nSuma intervinientes: ' + sumaHorasIntervinientes);
+      }
+
+      // Validar que en modalidad presencial, al menos el 85% de las horas sean como ponente
+
+      const modalidad = normalize(
+        (extracted?.identificativos?.["MODALIDAD/MODALITAT (ON LINE/SEMIPRESENCIAL/PRESENCIAL)"] || '').toLowerCase()
+      );
+
+      if (modalidad === 'presencial') {
+        const horasPonente = (extracted?.intervinientes || []).reduce((acc, it) => {
+          const tipo = normalize(it["TIPO DE INTERVENCIÓN*/ TIPUS D'INTERVENCIÓ*"]);
+          if (tipo.includes('PONENT')) {
+            return acc + parseNumber(it["UNIDADES/UNITATS"]);
+          }
+          return acc;
+        }, 0);
+
+        const minimoPonente = horasTotales * 0.85;
+        if (horasPonente + 0.001 < minimoPonente) {
+          errores.push(
+            'En modalidad presencial, al menos el 85% de las horas debe ser como ponente.\n' +
+            'Horas totales: ' + horasTotales + '\n' +
+            'Mínimo ponente (85%): ' + minimoPonente.toFixed(2) + '\n' +
+            'Horas como ponente: ' + horasPonente
+          );
+        }
+      }
+
+
+      // Validar que si es semipresencial les hores de ponent sean entre el 84 y el 16% del total, y el resto síncronas o tutorización. (esto es un poco más complejo porque hay que permitir cierto margen de error en el cálculo de horas, pero se puede hacer)
+
+      const esModalidadSemipresencial = modalidad.includes('SEMIPRESENCIAL');
+
+      if (esModalidadSemipresencial) {
+        const toleranciaHoras = Math.max(0.01, horasTotales * 0.005); // 0,5% o 0,01 h
+
+        let horasPonent = 0;
+        let horasRestoValidas = 0;
+        const noPermitidos = [];
+
+        (extracted?.intervinientes || []).forEach(it => {
+          const tipo = normalize(it["TIPO DE INTERVENCIÓN*/ TIPUS D'INTERVENCIÓ*"]);
+          const horas = parseNumber(it["UNIDADES/UNITATS"]);
+
+          if (horas <= 0) return;
+
+          if (tipo.includes('PONENT')) {
+            horasPonent += horas;
+            return;
+          }
+
+          if (tipo.includes('SINCRON') || tipo.includes('TUTORIZ')) {
+            horasRestoValidas += horas;
+            return;
+          }
+
+          noPermitidos.push(it);
+        });
+
+        const minimoPonent = horasTotales * 0.16;
+        const maximoPonent = horasTotales * 0.84;
+
+        if (horasPonent < minimoPonent - toleranciaHoras || horasPonent > maximoPonent + toleranciaHoras) {
+          errores.push(
+            'En modalidad semipresencial, las horas de ponente deben estar entre el 16% y el 84% del total.\n' +
+            'Horas totales: ' + horasTotales + '\n' +
+            'Mínimo ponente (16%): ' + minimoPonent.toFixed(2) + '\n' +
+            'Máximo ponente (84%): ' + maximoPonent.toFixed(2) + '\n' +
+            'Horas como ponente: ' + horasPonent
+          );
+        }
+
+        const restoEsperado = horasTotales - horasPonent;
+        if (Math.abs(restoEsperado - horasRestoValidas) > toleranciaHoras) {
+          errores.push(
+            'En modalidad semipresencial, las horas que no son de ponente deben ser síncronas o de tutorización.\n' +
+            'Horas restantes esperadas: ' + restoEsperado.toFixed(2) + '\n' +
+            'Horas síncronas/tutorización: ' + horasRestoValidas
+          );
+        }
+
+        if (noPermitidos.length) {
+          const detalle = noPermitidos.map(it => {
+            const nombre = it["NOMBRE Y APELLIDOS o EMPRESA / NOM I COGNOMS o EMPRESA"] || '(sin nombre)';
+            const horas = it["UNIDADES/UNITATS"] || '0';
+            const tipo = it["TIPO DE INTERVENCIÓN*/ TIPUS D'INTERVENCIÓ*"] || '';
+            return `- ${nombre} | ${horas} h | tipo: ${tipo}`;
+          }).join('\n');
+
+          errores.push(
+            'En modalidad semipresencial, fuera de las horas de ponente solo se permiten horas síncronas o de tutorización.\n' +
+            detalle
+          );
+        }
+      }
+
+      // Validar que si es online, on line o a distancia las horas de ponent son menos del 15% del total
+
+      const esModalidadOnline = modalidad.includes('ONLINE') || modalidad.includes('ON LINE') || modalidad.includes('A DISTANCIA');
+
+      if (esModalidadOnline) {
+        const horasPonentOnline = (extracted?.intervinientes || []).reduce((acc, it) => {
+          const tipo = normalize(it["TIPO DE INTERVENCIÓN*/ TIPUS D'INTERVENCIÓ*"]);
+          if (tipo.includes('PONENT')) {
+            return acc + parseNumber(it["UNIDADES/UNITATS"]);
+          }
+          return acc;
+        }, 0);
+
+        const maximoPonentOnline = horasTotales * 0.15;
+
+        if (horasPonentOnline > maximoPonentOnline + 0.001) {
+          errores.push(
+            'En modalidad online/on line/a distancia, las horas de ponente deben ser inferiores al 15% del total.\n' +
+            'Horas totales: ' + horasTotales + '\n' +
+            'Máximo permitido (15%): ' + maximoPonentOnline.toFixed(2) + '\n' +
+            'Horas como ponente: ' + horasPonentOnline
+          );
+        }
+      }
+
+      // Calcula que las horas totales dividido por el numero de días es menor que 8 en la modalidad presencial
+
+      const esModalidadPresencial = modalidad.includes('PRESENCIAL');
+
+      if (esModalidadPresencial) {
+        const dias = parseNumber(extracted?.identificativos?.["NÚMERO DE DÍAS / NÚMERO DE DIES"]);
+        if (dias > 0) {
+          const horasPorDia = horasTotales / dias;
+          if (horasPorDia > 8) {
+            errores.push(
+              'En modalidad presencial, no se pueden hacer más de 8 horas por día.\n' +
+              'Horas totales: ' + horasTotales + '\n' +
+              'Número de días: ' + dias + '\n' +
+              'Horas por día: ' + horasPorDia.toFixed(2)
+            );
+          }
+        }
+      }
+
+      // Recopila todos los errores encontrados y muéstralos en un modal de Bootstrap. Si no hay errores, continúa con la generación del documento.
+
+      if (errores.length) {
+        const modalId = 'excelValidationModal';
+        const oldModal = document.getElementById(modalId);
+        if (oldModal) oldModal.remove();
+
+        const escapeHtml = (str) => String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+
+        const erroresHtml = errores.map(err =>
+          `<li class="mb-2">${escapeHtml(err).replace(/\n/g, '<br>')}</li>`
+        ).join('');
+
+        document.body.insertAdjacentHTML('beforeend', `
+          <div class="modal fade" id="${modalId}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+              <div class="modal-content border-warning">
+          <div class="modal-header bg-warning-subtle">
+            <h5 class="modal-title text-dark">Revisa les dades de l'Excel</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <p class="mb-3">
+              S'han detectat els següents errors o avisos:
+            </p>
+            <ul class="mb-3">
+              ${erroresHtml}
+            </ul>
+            <div class="alert alert-warning mb-0">
+              Si tens clar que tot és correcte, pots ignorar aquest missatge, però posa-ho en Observacions de l'Excel explicant-ho, pots continuar amb la generació del document si està tot explicat.
+              Si tens dubtes, consulta-ho amb la Direcció.
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Entés</button>
+          </div>
+              </div>
+            </div>
+          </div>
+        `);
+
+        const modalEl = document.getElementById(modalId);
+        modalEl.addEventListener('hidden.bs.modal', () => modalEl.remove(), { once: true });
+        new bootstrap.Modal(modalEl).show();
+
+      }
+
+
+    }
+
+
+
+    async function setFile(file) {
       if (!file) return;
+      const buffer = await file.arrayBuffer();
       selectedFile = file;
       fileNameEl.textContent = file.name;
+
+      const ok = comprovafiledatos(buffer);
+
     }
 
     // Drag & drop
@@ -543,21 +821,23 @@
             errores["Relacio_juridica"] = "";
             errores["Dates_inici_final"] = "";
 
-            let elErr = "";
             // show errors if any
             var errorMsg = "";
             let hasError = false;
             for (const key of Object.keys(pre)) {
-              //const idErr = `${modalId}_${key.replace(/\s+/g,'_')}_err`;
-              //const elErr = modalEl.querySelector(`#${idErr}`);
+              const idErr = `${modalId}_${key.replace(/\s+/g, '_')}_err`;
+              const elErr = modalEl.querySelector(`#${idErr}`);
 
               if (errores.hasOwnProperty(key) && errores[key]) {
                 hasError = true;
                 errorMsg += key + ": " + errores[key] + "\n";
-                //elErr.classList.remove('d-none');
-              } else {
+                if (elErr) {
+                  elErr.textContent = errores[key];
+                  elErr.classList.remove('d-none');
+                }
+              } else if (elErr) {
                 elErr.textContent = '';
-                //elErr.classList.add('d-none');
+                elErr.classList.add('d-none');
               }
             }
 

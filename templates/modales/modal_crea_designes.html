@@ -57,6 +57,32 @@
     const identFields = ["CONVOCATORIA / CONVOCATÒRIA (AAPP, FSE, PAA, etc.)", "ASESORÍA RESPONSABLE / ASSESSORIA RESPONSABLE", "CÓDIGO EDICIÓN / CODI EDICIÓ", "TÍTULO ACCIÓN FORMATIVA / TÍTOL ACCIÓ FORMATIVA", "NÚMERO HORAS TOTALES / Nº HORES TOTALS", "FECHAS REALIZACIÓN / DATES REALITZACIÓ", "MODALIDAD/MODALITAT (ON LINE/SEMIPRESENCIAL/PRESENCIAL)", "TIPO DE FORMACIÓN (CURSO / TALLER / JORNADA / CONGRESO)", "Nº PARTICIPANTES / NOMBRE PARTICIPANTS", "PRESUPUESTO / PRESSUPOST"];
 
     const intervFields = ["NOMBRE Y APELLIDOS o EMPRESA / NOM I COGNOMS o EMPRESA", "DNI / CIF", "JURÍDICO", "MINUTA / DIETA / FACTURA/ MATERIAL", "TIPO DE INTERVENCIÓN*/ TIPUS D'INTERVENCIÓ*", "UNIDADES/UNITATS", "Solo en caso de tutorización indicar Nº ALUMNOS/AS TUTORIZADOS", "TARIFICACIÓN APLICADA (€)", "IMPORTE / IMPORT (€)"];
+
+    const IMPORTE_FIELD = "IMPORTE / IMPORT (€)";
+    const parseEuroToNumber = (v) => {
+      if (v === null || v === undefined) return null;
+      const s = String(v).trim();
+      if (!s) return null;
+
+      const normalized = s
+        .replace(/\s*€\s*/gi, '')
+        .replace(/\./g, '')   // miles
+        .replace(',', '.')    // decimal
+        .replace(/[^\d.-]/g, '');
+
+      const n = Number.parseFloat(normalized);
+      return Number.isFinite(n) ? n : null;
+    };
+
+    // Convierte automáticamente IMPORTE al crear cada objeto interviniente
+    const _fromEntries = Object.fromEntries.bind(Object);
+    Object.fromEntries = function (entries) {
+      const obj = _fromEntries(entries);
+      if (obj && Object.prototype.hasOwnProperty.call(obj, IMPORTE_FIELD)) {
+        obj[IMPORTE_FIELD] = parseEuroToNumber(obj[IMPORTE_FIELD]);
+      }
+      return obj;
+    };
     let extracted = null;
 
 
@@ -87,19 +113,66 @@
         identificativos[label] = cellText(ws, `D${idx + 11}`);
       });
 
+      const parseEuroNumber = (v) => {
+        if (v === null || v === undefined) return null;
+        const s = String(v).trim();
+        if (!s) return null;
+
+        const normalized = s
+          .replace(/\s*€\s*/gi, '')
+          .replace(/\./g, '')
+          .replace(',', '.')
+          .replace(/[^\d.-]/g, '');
+
+        const n = Number.parseFloat(normalized);
+        return Number.isFinite(n) ? n : null;
+      };
+
+      identificativos["PRESUPUESTO / PRESSUPOST"] = parseEuroNumber(
+        identificativos["PRESUPUESTO / PRESSUPOST"]
+      );
+
       const intervinientes = [];
       for (let r = 23; r <= 1000; r++) {
         const rowVals = [];
         for (let c = 2; c <= 10; c++) {
-          rowVals.push(cellText(ws, `${XLSX.utils.encode_col(c)}${r}`));
+          const addr = `${XLSX.utils.encode_col(c)}${r}`;
+          const cell = ws[addr];
+          // For IMPORTE field (last column, index 8), read raw numeric value
+          if (c === 10) {
+            if (!cell || cell.v === undefined || cell.v === null) {
+              rowVals.push('');
+            } else {
+              // Prefer raw numeric value from cell
+              const raw = cell.v;
+              if (typeof raw === 'number') {
+                rowVals.push(raw);
+              } else {
+                // fallback: parse string
+                const s = String(cell.w ?? raw).trim()
+                  .replace(/\s*€\s*/gi, '')
+                  .replace(/\./g, '')
+                  .replace(',', '.')
+                  .replace(/[^\d.-]/g, '');
+                const n = Number.parseFloat(s);
+                rowVals.push(Number.isFinite(n) ? n : '');
+              }
+            }
+          } else {
+            rowVals.push(cellText(ws, addr));
+          }
         }
         if (rowVals.every(v => v === '')) break;
         if (rowVals[0] === '') continue;
         intervinientes.push(Object.fromEntries(intervFields.map((k, i) => [k, rowVals[i]])));
       }
 
+
+
       return { identificativos, intervinientes };
     }
+
+    /* Esta función toma el archivo Excel como un ArrayBuffer, lo lee usando XLSX, extrae los datos y luego realiza varias validaciones: - Comprueba que las horas totales coinciden con la suma de horas de los intervinientes. - Si la modalidad es presencial, verifica que al menos el 85% de las horas sean como ponente. - Si la modalidad es semipresencial, asegura que las horas de ponente estén entre el 16% y el 84% del total, y que el resto sean síncronas o de tutorización. - Si la modalidad es online, confirma que las horas de ponente sean menos del 15% del total. - En modalidad presencial, verifica que las horas totales divididas por el número de días no superen las 8 horas por día. Si se encuentran errores, se recopilan y se muestran en un modal de Bootstrap para informar al usuario. */
 
 
     function comprovafiledatos(file_comprova) {
@@ -107,6 +180,9 @@
       console.log('Archivo seleccionado:', file_comprova);
       const wb = XLSX.read(file_comprova, { type: 'array', cellDates: true });
       console.log('Archivo leído como workbook:', wb);
+
+
+
       extracted = extractData(wb);
 
       console.log('Datos extraídos:', extracted);
@@ -262,6 +338,38 @@
         }
       }
 
+      // Comprueba que la suma de todos los "IMPORTE / IMPORT (€)" de los intervinientes sea exactamente igual al del "PRESUPUESTO / PRESSUPOST" indicado en los identificativos. Si no es igual, muestra un error indicando el importe total de los intervinientes, el presupuesto indicado y la diferencia.
+      const presupuesto = parseNumber(
+        extracted?.identificativos?.["PRESUPUESTO / PRESSUPOST"]
+      );
+
+      const totalImportesIntervinientes = (extracted?.intervinientes || []).reduce((acc, it) => {
+        return acc + parseNumber(it["IMPORTE / IMPORT (€)"]);
+      }, 0);
+
+      const toCents = (n) => Math.round((Number(n) || 0) * 100);
+      const diff = totalImportesIntervinientes - presupuesto;
+
+      if (toCents(totalImportesIntervinientes) !== toCents(presupuesto)) {
+        const fmt = (n) =>
+          new Intl.NumberFormat('es-ES', {
+            style: 'currency',
+            currency: 'EUR'
+          }).format(Number(n) || 0);
+
+        errores.push(
+          'El importe total de intervinientes no coincide con el presupuesto indicado.\n' +
+          'Total intervinientes: ' + fmt(totalImportesIntervinientes) + '\n' +
+          'Presupuesto indicado: ' + fmt(presupuesto) + '\n' +
+          'Diferencia: ' + fmt(diff)
+        );
+      }
+
+
+
+
+
+
       // Calcula que las horas totales dividido por el numero de días es menor que 8 en la modalidad presencial
 
       const esModalidadPresencial = modalidad.includes('PRESENCIAL');
@@ -276,6 +384,69 @@
               'Horas totales: ' + horasTotales + '\n' +
               'Número de días: ' + dias + '\n' +
               'Horas por día: ' + horasPorDia.toFixed(2)
+            );
+          }
+        }
+      }
+
+      // Comprueba que el código de la edición concuerde con este patrón (r'^(25|26|27)FP\d{2}[A-Z]{2}\d{3}$', codigo):
+      const codigoRaw =
+        extracted?.identificativos?.["CÓDIGO EDICIÓN / CODI EDICIÓ"] ??
+        extracted?.identificativos?.["CÓDIGO DE LA EDICIÓN / CÒDIGO DE L'EDICIÓ"] ??
+        '';
+
+      const codigo = String(codigoRaw).trim().toUpperCase();
+      const patronCodigo = /^(26|27|28)[A-Z]{2}\d{2}[A-Z]{2}\d{3}$/;
+
+      if (codigo && !patronCodigo.test(codigo)) {
+        errores.push(
+          'El código de la edición no coincide con el patrón esperado.\n' +
+          'Código ingresado: ' + codigo + '\n' +
+          'Formato esperado: año + 2 letras + 2 números + 2 letras + 3 números (ej: 27FP12AB345)'
+        );
+      }
+
+      // Normaliza fechas: acepta "Del dd/MM/yyyy al dd/MM/yyyy" y también "dd/MM/yyyy al dd/MM/yyyy"
+      const fechasRaw = extracted?.identificativos?.["FECHAS REALIZACIÓN / DATES REALITZACIÓ"];
+      if (fechasRaw) {
+        const txt = String(fechasRaw).trim();
+
+        const conDel = /^Del\s+\d{2}\/\d{2}\/\d{4}\s+al\s+\d{2}\/\d{2}\/\d{4}$/i;
+        const sinDel = /^(\d{2}\/\d{2}\/\d{4})\s+al\s+(\d{2}\/\d{2}\/\d{4})$/i;
+
+        if (sinDel.test(txt) && !conDel.test(txt)) {
+          const m = txt.match(sinDel);
+          extracted.identificativos["FECHAS REALIZACIÓN / DATES REALITZACIÓ"] = `Del ${m[1]} al ${m[2]}`;
+        }
+      }
+
+      const fechas = extracted?.identificativos?.["FECHAS REALIZACIÓN / DATES REALITZACIÓ"];
+      if (fechas) {
+        const patronFechas = /^Del\s+(\d{2}\/\d{2}\/\d{4})\s+al\s+(\d{2}\/\d{2}\/\d{4})$/i;
+        const m = fechas.match(patronFechas);
+        if (!m) {
+          errores.push(
+            'Las fechas de realización no tienen el formato correcto.\n' +
+            'Fechas ingresadas: ' + fechas + '\n' +
+            'Formato esperado: Del dd/MM/yyyy al dd/MM/yyyy'
+          );
+        } else {
+          const parseFecha = (s) => {
+            const [dia, mes, año] = s.split('/').map(Number);
+            return new Date(año, mes - 1, dia);
+          };
+          const fechaInicio = parseFecha(m[1]);
+          const fechaFin = parseFecha(m[2]);
+          if (isNaN(fechaInicio.getTime()) || isNaN(fechaFin.getTime())) {
+            errores.push(
+              'Las fechas de realización contienen fechas no válidas.\n' +
+              'Fechas ingresadas: ' + fechas
+            );
+          } else if (fechaInicio > fechaFin) {
+            errores.push(
+              'La fecha de inicio no puede ser posterior a la fecha de fin.\n' +
+              'Fecha de inicio: ' + m[1] + '\n' +
+              'Fecha de fin: ' + m[2]
             );
           }
         }

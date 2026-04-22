@@ -222,7 +222,7 @@ def generar_certifica_sdgfp(datos, identificativos, campana, numero_a_letras=lam
 
     encabezado = doc.add_paragraph()
     encabezado.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    encabezado.add_run("\nJORDI MARTÍ GUIU, SUBDIRECTOR GENERAL DE FORMACIÓ DEL PROFESSORAT\n \n")
+    encabezado.add_run("\nDANIEL MCEVOY BRAVO, SECRETARI AUTONÒMIC D’EDUCACIÓ\n \n")
 
     tabla = doc.add_table(rows=1, cols=2)
     tabla.autofit = False
@@ -357,7 +357,7 @@ def designasdgfp(datos, identificativos, campana, numero_a_letras=lambda x:str(x
 
     encabezado = doc.add_paragraph()
     encabezado.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    encabezado.add_run("\nJORDI MARTÍ GUIU, SUBDIRECTOR GENERAL DE FORMACIÓ DEL PROFESSORAT\n \n")
+    encabezado.add_run("\nDANIEL MCEVOY BRAVO, SECRETARI AUTONÒMIC D’EDUCACIÓ\n \n")
 
     tabla = doc.add_table(rows=1, cols=2)
     tabla.autofit = False

@@ -1002,7 +1002,7 @@ def generar_skills_certifica(datos, identificativos, numero_a_letras=lambda x:st
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     # p.add_run("\n\nCarolina Part Julio, Subdirectora General d'Innovació, Orientació i Acreditació Professional, de la Direcció General de Formació Professional.\n").bold = True
 
-    p.add_run("\n\nCarolina Part Julio, Subdirectora General d'Orientació y Qualificació Professional y del IVQP, de la Direcció General de Formació Professional.\n").bold = True
+    p.add_run("\n\nCarolina Part Julio, Subdirectora General d'Orientació y Qualificació Professional y de l'IVQP, de la Direcció General de Formació Professional.\n").bold = True
 
     # Subdirección General de Orientación y Cualificación Profesional y del IVCP
 
@@ -1204,7 +1204,7 @@ def generar_skills_certifica(datos, identificativos, numero_a_letras=lambda x:st
     p_firma.alignment = WD_ALIGN_PARAGRAPH.CENTER
     # p_firma.add_run("Carolina Part Julio, Subdirectora General d'Innovació, Orientació i Acreditació Professional, de la Direcció General de Formació Professional")
 
-    p_firma.add_run("Carolina Part Julio, Subdirectora General d'Orientació y Qualificació Professional y del IVQP, de la Direcció General de Formació Professional.")
+    p_firma.add_run("Carolina Part Julio, Subdirectora General d'Orientació y Qualificació Professional y de l'IVQP, de la Direcció General de Formació Professional.")
 
 
 

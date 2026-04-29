@@ -1000,7 +1000,11 @@ def generar_skills_certifica(datos, identificativos, numero_a_letras=lambda x:st
     # Encabezado de autoridad
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p.add_run("\n\nCarolina Part Julio, Subdiretora General d'Innovació, Orientació i Acreditació Professional, de la Direcció General de Formació Professional.\n").bold = True
+    # p.add_run("\n\nCarolina Part Julio, Subdiretora General d'Innovació, Orientació i Acreditació Professional, de la Direcció General de Formació Professional.\n").bold = True
+
+    p.add_run("\n\nCarolina Part Julio, Subdiretora General d'Orientació y Qualificació Professional y del IVQP, de la Direcció General de Formació Professional.\n").bold = True
+
+    # Subdirección General de Orientación y Cualificación Profesional y del IVCP
 
     # RESOLUCIÓN
     p_resolc = doc.add_paragraph()
@@ -1198,7 +1202,11 @@ def generar_skills_certifica(datos, identificativos, numero_a_letras=lambda x:st
 
     p_firma = doc.add_paragraph()
     p_firma.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p_firma.add_run("Carolina Part Julio, Subdiretora General d'Innovació, Orientació i Acreditació Professional, de la Direcció General de Formació Professional")
+    # p_firma.add_run("Carolina Part Julio, Subdiretora General d'Innovació, Orientació i Acreditació Professional, de la Direcció General de Formació Professional")
+
+    p_firma.add_run("Carolina Part Julio, Subdiretora General d'Orientació y Qualificació Professional y del IVQP, de la Direcció General de Formació Professional.")
+
+
 
     # Nombre de archivo y guardado
     doc_name = f"{codigo}_CERTIFICA_INFORME_POSTERIOR_{datos['Nombre'].replace(' ', '_')}.docx"

@@ -458,52 +458,7 @@
       // Recopila todos los errores encontrados y muéstralos en un modal de Bootstrap. Si no hay errores, continúa con la generación del documento.
 
       if (errores.length) {
-        const modalId = 'excelValidationModal';
-        const oldModal = document.getElementById(modalId);
-        if (oldModal) oldModal.remove();
-
-        const escapeHtml = (str) => String(str)
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#39;');
-
-        const erroresHtml = errores.map(err =>
-          `<li class="mb-2">${escapeHtml(err).replace(/\n/g, '<br>')}</li>`
-        ).join('');
-
-        document.body.insertAdjacentHTML('beforeend', `
-          <div class="modal fade" id="${modalId}" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-lg">
-              <div class="modal-content border-warning">
-          <div class="modal-header bg-warning-subtle">
-            <h5 class="modal-title text-dark">Revisa les dades de l'Excel</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-          </div>
-          <div class="modal-body">
-            <p class="mb-3">
-              S'han detectat els següents errors o avisos:
-            </p>
-            <ul class="mb-3">
-              ${erroresHtml}
-            </ul>
-            <div class="alert alert-warning mb-0">
-              Si tens clar que tot és correcte, pots ignorar aquest missatge, però posa-ho en Observacions de l'Excel explicant-ho, pots continuar amb la generació del document si està tot explicat.
-              Si tens dubtes, consulta-ho amb la Direcció.
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Entés</button>
-          </div>
-              </div>
-            </div>
-          </div>
-        `);
-
-        const modalEl = document.getElementById(modalId);
-        modalEl.addEventListener('hidden.bs.modal', () => modalEl.remove(), { once: true });
-        new bootstrap.Modal(modalEl).show();
+        alert('Se han encontrado los siguientes errores en el archivo:\n\n' + errores.join('\n\n'));
 
       }
 

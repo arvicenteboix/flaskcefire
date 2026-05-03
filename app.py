@@ -344,17 +344,22 @@ def cdd_view():
                         "correoelectronico": "" if pd.isna(row["Correo"]) else str(row["Correo"]),
                         "tipo": "" if pd.isna(row["Tipo"]) else str(row["Tipo"])
                 })
-                print("datos_cuestionarios:", datos_cuestionarios)
-                cdd.crear_zip_cuestionarios_directo(datos_cuestionarios)
+                # print("datos_cuestionarios:", datos_cuestionarios)
+                tmp_file =cdd.crear_zip_cuestionarios_directo(datos_cuestionarios)
 
-                
+                return send_file(tmp_file.name, as_attachment=True, download_name="cuestionarios_cdd.zip")
 
             except Exception as e:
                 print(f"Error al leer el Excel: {e}")
-            
-            return send_file("cdd.zip", as_attachment=True, download_name="cuestionarios_cdd.zip")
-        
-
+            finally:
+                if os.path.exists("cdd.zip"):
+                    import time
+                    for _ in range(20):
+                        try:
+                            os.remove("cdd.zip")  # Limpiar el ZIP temporal después de enviarlo
+                            break
+                        except PermissionError:
+                            time.sleep(0.25)
     
     return render_template("cdd.html")
 """ 

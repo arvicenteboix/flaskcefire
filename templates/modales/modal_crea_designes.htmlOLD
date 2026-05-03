@@ -49,7 +49,7 @@
       </div>
     </div>
   </div>
-</div>
+</div> 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
   (() => {
@@ -455,7 +455,52 @@
       // Recopila todos los errores encontrados y muéstralos en un modal de Bootstrap. Si no hay errores, continúa con la generación del documento.
 
       if (errores.length) {
-        alert('Se han encontrado los siguientes errores en el archivo:\n\n' + errores.join('\n\n'));
+        const modalId = 'excelValidationModal';
+        const oldModal = document.getElementById(modalId);
+        if (oldModal) oldModal.remove();
+
+        const escapeHtml = (str) => String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+
+        const erroresHtml = errores.map(err =>
+          `<li class="mb-2">${escapeHtml(err).replace(/\n/g, '<br>')}</li>`
+        ).join('');
+
+        document.body.insertAdjacentHTML('beforeend', `
+          <div class="modal fade" id="${modalId}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+              <div class="modal-content border-warning">
+          <div class="modal-header bg-warning-subtle">
+            <h5 class="modal-title text-dark">Revisa les dades de l'Excel</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <p class="mb-3">
+              S'han detectat els següents errors o avisos:
+            </p>
+            <ul class="mb-3">
+              ${erroresHtml}
+            </ul>
+            <div class="alert alert-warning mb-0">
+              Si tens clar que tot és correcte, pots ignorar aquest missatge, però posa-ho en Observacions de l'Excel explicant-ho, pots continuar amb la generació del document si està tot explicat.
+              Si tens dubtes, consulta-ho amb la Direcció.
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Entés</button>
+          </div>
+              </div>
+            </div>
+          </div>
+        `);
+
+        const modalEl = document.getElementById(modalId);
+        modalEl.addEventListener('hidden.bs.modal', () => modalEl.remove(), { once: true });
+        new bootstrap.Modal(modalEl).show();
 
       }
 
@@ -470,7 +515,7 @@
       selectedFile = file;
       fileNameEl.textContent = file.name;
 
-      const ok = comprovafiledatos(buffer); //Me dona un error
+      const ok = comprovafiledatos(buffer);
 
     }
 
@@ -773,353 +818,300 @@
 
     }
 
-async function uploadForMinuta() {
+
+    async function uploadForMinuta() {
   if (!selectedFile) {
     alert('Selecciona un archivo primero.');
     return;
   }
 
-  const url = '/minuta-dgfp';
+      const url = '/minuta-dgfp';
+      // Disable UI
+      // Object.values(buttons).forEach(b => b.disabled = true);
   const fd = new FormData();
   fd.append('file', selectedFile);
 
-  try {
-    const resp = await axios.post(url, fd, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-      responseType: 'json'
-    });
+      const resp = await axios.post(url, fd, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    responseType: 'json'
+  });
 
-    let data = resp.data;
-    let tram;
+      // Ensure we have a JS object/array: if server returned a JSON string, parse it; if axios already parsed, use it.
+  let data = resp.data;
 
-    console.log('Respuesta recibida:', typeof data, data);
+      console.log('Respuesta recibida:', typeof data, data);
 
-    if (typeof data === 'string') {
-      try {
-        const cleaned = data
-          .replace(/\bNaN\b/g, 'null')
-          .replace(/\bInfinity\b/g, 'null')
-          .replace(/\b-Infinity\b/g, 'null');
-        tram = JSON.parse(cleaned);
-        console.log('JSON parseado:', tram);
-      } catch (e) {
-        console.error('Error parsing JSON string:', e);
-        tram = [];
-      }
-    } else if (typeof data === 'object' && data !== null) {
-      tram = data;
-    } else {
-      console.error('Respuesta inesperada del servidor:', data);
+
+  if (typeof data === 'string') {
+    try {
+          // reemplazar NaN/Infinity no válidos en JSON por null antes de parsear
+          const cleaned = data.replace(/\bNaN\b/g, 'null').replace(/\bInfinity\b/g, 'null').replace(/\b-Infinity\b/g, 'null');
+      tram = JSON.parse(cleaned);
+          console.log('JSON parseado:', tram);
+        } catch (e) {
+          console.error('Error parsing JSON string:', e);
       tram = [];
     }
+  } else if (typeof data === 'object' && data !== null) {
+    tram = data;
+  } else {
+        console.error('Respuesta inesperada del servidor:', data);
+    tram = [];
+  }
 
-    console.log('Datos procesados:', tram);
 
-    const personas = tram['personas'] || [];
-    const identificativos = tram['identificativos'] || {};
 
-    console.log('Personas extraídas:', personas);
+      console.log('Datos procesados:', tram);
+      //console.log(tram['personas'].length);
+  personas = tram['personas'] || [];
+  identificativos = tram['identificativos'] || [];
 
-    if (!personas.length) {
-      alert('No hay personas en la respuesta');
-      return;
-    }
+      console.log('Personas extraídas:', personas);
 
-    const resultados = [];
 
-    const onlyText = s => /^[A-Za-zÀ-ÖØ-öø-ÿ\s'’-]+$/.test((s || '').toString().trim());
-    const nifValido = s => /^[0-9]{8}[A-Za-z]$/.test((s || '').toString().trim());
-    const textoNumeros = s => /^[A-Za-z0-9À-ÖØ-öø-ÿ\s\.,'’()_\+\-\/\\:;%&@#\*\=\?\!¿¡]*$/.test((s || '').toString().trim());
-    const cpValido = s => /^\d{5}$/.test((s || '').toString().trim());
-    const soloCifras = s => /^\d+(\.\d+)?$/.test((s || '').toString().trim());
-    const ibanValido = s => /^[A-Z]{2}[0-9A-Z]{13,30}$/.test(((s || '').toString().replace(/\s+/g, '')).toUpperCase());
-    const emailValido = s => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s || '').toString().trim());
-    const telefonoValido = s => /^\d{9}$/.test((s || '').toString().trim());
 
-    const modalMainEl = document.getElementById('modalCreaDesignes');
-    const modalMain = modalMainEl ? bootstrap.Modal.getInstance(modalMainEl) : null;
+  if (!personas.length) {
+        alert('No hay personas en la respuesta');
+      } else {
+        const resultados = [];
 
-    const cleanupModalState = () => {
-      document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
-      document.body.classList.remove('modal-open');
-      document.body.style.removeProperty('padding-right');
-      document.body.style.removeProperty('overflow');
+        const onlyText = s => /^[A-Za-zÀ-ÖØ-öø-ÿ\s'’-]+$/.test((s || '').toString().trim());
+        const nifValido = s => /^[0-9]{8}[A-Za-z]$/.test((s || '').toString().trim());
+        const textoNumeros = s => /^[A-Za-z0-9À-ÖØ-öø-ÿ\s\.,'’()_\+\-\/\\:;%&@#\*\=\?\!¿¡]*$/.test((s || '').toString().trim());
+        const cpValido = s => /^\d{5}$/.test((s || '').toString().trim());
+        const soloCifras = s => /^\d+(\.\d+)?$/.test((s || '').toString().trim());
+        const ibanValido = s => /^[A-Z]{2}[0-9A-Z]{13,30}$/.test(((s || '').toString().replace(/\s+/g, '')).toUpperCase());
+        const emailValido = s => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s || '').toString().trim());
+        const telefonoValido = s => /^\d{9}$/.test((s || '').toString().trim());
+
+        const showModalFor = (i) => {
+          const p = personas[i] || {};
+          const modalId = `modalMinuta_${i}`;
+          //const mov = (p.Movimientos && p.Movimientos[0]) || {};
+
+          const movimientos = (p.Movimientos && Array.isArray(p.Movimientos)) ? p.Movimientos : [];
+          const importeBruto = movimientos.reduce((sum, mov) => {
+            const importe = mov['IMPORTE / IMPORT (€)'] != null ? parseFloat(mov['IMPORTE / IMPORT (€)']) : 0;
+            return sum + importe;
+          }, 0);
+
+
+
+    const pre = {
+      "Nombre y Apellidos": p.Nombre || '',
+      "NIF": p.DNI || '',
+      "Domicili": p.Domicili || '',
+      "CP": p.CP || '',
+      "Población": p.Población || '',
+      "Provincia": p.Provincia || '',
+      "Nombre del curso": identificativos['CÓDIGO EDICIÓN / CODI EDICIÓ'] + " - " + identificativos['TÍTULO ACCIÓN FORMATIVA / TÍTOL ACCIÓ FORMATIVA'] || '',
+      "Importe bruto": importeBruto ? String(importeBruto) : 'Error',
+      "Importe neto": importeBruto ? String(importeBruto - 0.15 * importeBruto) : 'Error',
+      "IBAN": p.IBAN || '',
+      "BIC": p.BIC || '',
+      "Email": p.Email || '',
+      "Teléfono": p.Teléfono || p.Telefono || '',
+      "Grup": p.Grup || '',
+      "Nivell": p.Nivell || '',
+            "Relacio_juridica": p.Relacio_juridica || p.JUR ? p.JUR : '',
+      "Dates_inici_final": identificativos['FECHAS REALIZACIÓN / DATES REALITZACIÓ'] || ''
     };
 
-    const showModalFor = (i) => {
-      const p = personas[i] || {};
-      const modalId = `modalMinuta_${i}`;
-
-      const oldModal = document.getElementById(modalId);
-      if (oldModal) {
-        const oldInstance = bootstrap.Modal.getInstance(oldModal);
-        if (oldInstance) oldInstance.dispose();
-        oldModal.remove();
-      }
-
-      cleanupModalState();
-
-      const movimientos = (p.Movimientos && Array.isArray(p.Movimientos)) ? p.Movimientos : [];
-      const importeBruto = movimientos.reduce((sum, mov) => {
-        const importe = mov['IMPORTE / IMPORT (€)'] != null
-          ? parseFloat(mov['IMPORTE / IMPORT (€)'])
-          : 0;
-        return sum + importe;
-      }, 0);
-
-      const nombreCurso = [
-        identificativos['CÓDIGO EDICIÓN / CODI EDICIÓ'] || '',
-        identificativos['TÍTULO ACCIÓN FORMATIVA / TÍTOL ACCIÓ FORMATIVA'] || ''
-      ].filter(Boolean).join(' - ');
-
-      const pre = {
-        "Nombre y Apellidos": p.Nombre || '',
-        "NIF": p.DNI || '',
-        "Domicili": p.Domicili || '',
-        "CP": p.CP || '',
-        "Población": p.Población || '',
-        "Provincia": p.Provincia || '',
-        "Nombre del curso": nombreCurso,
-        "Importe bruto": importeBruto ? String(importeBruto) : '0',
-        "Importe neto": importeBruto ? String(importeBruto - 0.15 * importeBruto) : '0',
-        "IBAN": p.IBAN || '',
-        "BIC": p.BIC || '',
-        "Email": p.Email || '',
-        "Teléfono": p.Teléfono || p.Telefono || '',
-        "Grup": p.Grup || '',
-        "Nivell": p.Nivell || '',
-        "Relacio_juridica": p.Relacio_juridica || p.JUR || '',
-        "Dates_inici_final": identificativos['FECHAS REALIZACIÓN / DATES REALITZACIÓ'] || ''
-      };
-
-      const html = `
-        <div class="modal fade" id="${modalId}" tabindex="-1" aria-hidden="true">
-          <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title">Persona: ${pre['Nombre y Apellidos'] || pre['NIF']}</h5>
-                <button type="button" class="btn-close js-close-minuta" aria-label="Cerrar"></button>
-              </div>
-              <style>
-                #${modalId} .modal-dialog { max-width: 1100px; }
-                @media (max-width: 1199.98px) {
-                  #${modalId} .modal-dialog { max-width: 95%; }
-                }
-              </style>
-              <div class="modal-body">
-                <div class="container-fluid">
-                  <div class="row g-3">
-                    ${Object.keys(pre).map(key => `
-                      <div class="col-12 col-md-4">
-                        <div class="mb-3">
-                          <label class="form-label">${key}</label>
-                          <input
-                            type="text"
-                            class="form-control"
-                            id="${modalId}_${key.replace(/\s+/g, '_')}"
-                            value="${(pre[key] || '').toString().replace(/"/g, '&quot;')}"
-                          >
+          const html = `
+          <div class="modal fade" id="${modalId}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title">Persona: ${pre['Nombre y Apellidos'] || pre['NIF']}</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <style>
+                  /* hacer el modal más ancho solo para este modal */
+                  #${modalId} .modal-dialog { max-width: 1100px; }
+                  /* proteger en pantallas pequeñas */
+                  @media (max-width: 1199.98px) {
+                    #${modalId} .modal-dialog { max-width: 95%; }
+                  }
+                </style>
+                    <div class="modal-body">
+                      <div class="container-fluid">
+                      <div class="row g-3">
+                        ${Object.keys(pre).map(key => `
+      <div class="col-12 col-md-4">
+                          <div class="mb-3">
+        <label class="form-label">${key}</label>
+                          <input type="text" class="form-control" id="${modalId}_${key.replace(/\s+/g, '_')}" value="${(pre[key] || '').toString().replace(/"/g, '&quot;')}">
                           <div class="invalid-feedback d-none" id="${modalId}_${key.replace(/\s+/g, '_')}_err"></div>
+      </div>
                         </div>
+                        `).join('')}
                       </div>
-                    `).join('')}
-                  </div>
+                      </div>
+                    </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                  <button type="button" class="btn btn-primary" id="nextBtn">${i === personas.length - 1 ? 'Guardar' : 'Siguiente'}</button>
                 </div>
               </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary js-cancel-minuta">Cancelar</button>
-                <button type="button" class="btn btn-primary" id="${modalId}_nextBtn">
-                  ${i === personas.length - 1 ? 'Guardar' : 'Siguiente'}
-                </button>
-              </div>
             </div>
-          </div>
-        </div>
-      `;
+          </div>`;
+          document.body.insertAdjacentHTML('beforeend', html);
+          const modalEl = document.getElementById(modalId);
+          const bsModal = new bootstrap.Modal(modalEl);
+          bsModal.show();
 
-      document.body.insertAdjacentHTML('beforeend', html);
+          const nextBtn = modalEl.querySelector(`#nextBtn`);
 
-      const modalEl = document.getElementById(modalId);
-      const bsModal = new bootstrap.Modal(modalEl, {
-        backdrop: 'static',
-        keyboard: false,
-        focus: true
-      });
+          nextBtn.addEventListener('click', async () => {
+      const valores = {};
+      const errores = {};
 
-      let confirmed = false;
+            // gather values
+      for (const key of Object.keys(pre)) {
+              const id = `${modalId}_${key.replace(/\s+/g, '_')}`;
+              valores[key] = (modalEl.querySelector(`#${id}`).value || '').toString().trim();
+      }
+            //alert("Valores recogidos");
+            // validations per specific field
 
-      modalEl.querySelector('.js-close-minuta').addEventListener('click', () => bsModal.hide());
-      modalEl.querySelector('.js-cancel-minuta').addEventListener('click', () => bsModal.hide());
+      errores["Nombre y Apellidos"] = onlyText(valores["Nombre y Apellidos"]) ? "" : "Solo texto permitido";
+      errores["NIF"] = nifValido(valores["NIF"]) ? "" : "Debe tener 8 números y 1 letra";
+      errores["Domicili"] = textoNumeros(valores["Domicili"]) ? "" : "Solo texto permitido";
+      errores["CP"] = cpValido(valores["CP"]) ? "" : "Debe tener 5 cifras";
+      errores["Población"] = onlyText(valores["Población"]) ? "" : "Solo texto permitido";
+      errores["Provincia"] = onlyText(valores["Provincia"]) ? "" : "Solo texto permitido";
+      errores["Nombre del curso"] = textoNumeros(valores["Nombre del curso"]) ? "" : "Solo texto permitido";
+      errores["Importe bruto"] = soloCifras(valores["Importe bruto"]) ? "" : "Solo cifras válidas";
+      errores["Importe neto"] = soloCifras(valores["Importe neto"]) ? "" : "Solo cifras válidas";
+      errores["IBAN"] = ibanValido(valores["IBAN"]) ? "" : "IBAN inválido";
+            errores["BIC"] = "";
+      errores["Email"] = emailValido(valores["Email"]) ? "" : "Email inválido";
+      errores["Teléfono"] = telefonoValido(valores["Teléfono"]) ? "" : "Debe tener 9 cifras";
+            errores["Grup"] = "";
+            errores["Nivell"] = "";
+            errores["Relacio_juridica"] = "";
+            errores["Dates_inici_final"] = "";
 
-      const nextBtn = modalEl.querySelector(`#${modalId}_nextBtn`);
+            // show errors if any
+            var errorMsg = "";
+            let hasError = false;
+      for (const key of Object.keys(pre)) {
+              const idErr = `${modalId}_${key.replace(/\s+/g, '_')}_err`;
+              const elErr = modalEl.querySelector(`#${idErr}`);
 
-      nextBtn.addEventListener('click', () => {
-        const valores = {};
-        const errores = {};
-
-        for (const key of Object.keys(pre)) {
-          const id = `${modalId}_${key.replace(/\s+/g, '_')}`;
-          valores[key] = (modalEl.querySelector(`#${id}`).value || '').toString().trim();
-        }
-
-        errores["Nombre y Apellidos"] = onlyText(valores["Nombre y Apellidos"]) ? "" : "Solo texto permitido";
-        errores["NIF"] = nifValido(valores["NIF"]) ? "" : "Debe tener 8 números y 1 letra";
-        errores["Domicili"] = textoNumeros(valores["Domicili"]) ? "" : "Solo texto permitido";
-        errores["CP"] = cpValido(valores["CP"]) ? "" : "Debe tener 5 cifras";
-        errores["Población"] = onlyText(valores["Población"]) ? "" : "Solo texto permitido";
-        errores["Provincia"] = onlyText(valores["Provincia"]) ? "" : "Solo texto permitido";
-        errores["Nombre del curso"] = textoNumeros(valores["Nombre del curso"]) ? "" : "Solo texto permitido";
-        errores["Importe bruto"] = soloCifras(valores["Importe bruto"]) ? "" : "Solo cifras válidas";
-        errores["Importe neto"] = soloCifras(valores["Importe neto"]) ? "" : "Solo cifras válidas";
-        errores["IBAN"] = ibanValido(valores["IBAN"]) ? "" : "IBAN inválido";
-        errores["BIC"] = "";
-        errores["Email"] = emailValido(valores["Email"]) ? "" : "Email inválido";
-        errores["Teléfono"] = telefonoValido(valores["Teléfono"]) ? "" : "Debe tener 9 cifras";
-        errores["Grup"] = "";
-        errores["Nivell"] = "";
-        errores["Relacio_juridica"] = "";
-        errores["Dates_inici_final"] = "";
-
-        let hasError = false;
-        let errorMsg = "";
-
-        for (const key of Object.keys(pre)) {
-          const idErr = `${modalId}_${key.replace(/\s+/g, '_')}_err`;
-          const elErr = modalEl.querySelector(`#${idErr}`);
-
-          if (errores.hasOwnProperty(key) && errores[key]) {
-            hasError = true;
-            errorMsg += key + ": " + errores[key] + "\n";
-            if (elErr) {
-              elErr.textContent = errores[key];
-              elErr.classList.remove('d-none');
-            }
-          } else if (elErr) {
-            elErr.textContent = '';
-            elErr.classList.add('d-none');
-          }
-        }
-
-        if (hasError) {
-          alert('Corrige los errores antes de continuar.\n' + errorMsg);
-          return;
-        }
-
-        confirmed = true;
-        resultados.push({ persona: p, valores, errores });
-        bsModal.hide();
-      });
-
-      modalEl.addEventListener('hidden.bs.modal', () => {
-        bsModal.dispose();
-        modalEl.remove();
-        cleanupModalState();
-
-        if (!confirmed) {
-          console.log('Proceso cancelado o modal cerrado. Datos parciales:', resultados);
-          Object.values(buttons).forEach(b => b.disabled = false);
-          return;
-        }
-
-        if (i + 1 < personas.length) {
-          setTimeout(() => showModalFor(i + 1), 60);
-          return;
-        }
-
-        (async () => {
-          try {
-            const fd2 = new FormData();
-            fd2.append('file', selectedFile);
-            fd2.append('resultados', JSON.stringify(resultados));
-
-            const resp2 = await axios.post('/genera-minuta', fd2, {
-              headers: { 'Content-Type': 'multipart/form-data' },
-              responseType: 'blob'
-            });
-
-            const blobResp = resp2.data;
-            const contentType2 = (resp2.headers && resp2.headers['content-type']) || '';
-
-            if (contentType2.includes('application/json')) {
-              const text = await blobResp.text();
-              let data2;
-              try { data2 = JSON.parse(text); } catch { data2 = { message: text }; }
-
-              selectedFile = null;
-              fileInput.value = '';
-              fileNameEl.textContent = '';
-
-              alert(data2?.message || 'Operación completada');
-            } else {
-              const cd2 = (resp2.headers && (resp2.headers['content-disposition'] || resp2.headers['Content-Disposition'])) || '';
-              let filename2 = 'download';
-
-              const m2 = cd2.match(/filename\*?=(?:UTF-8'')?["']?([^;"']+)/i);
-              if (m2 && m2[1]) {
-                try { filename2 = decodeURIComponent(m2[1]); } catch { filename2 = m2[1]; }
-              } else if (selectedFile && selectedFile.name) {
-                const base2 = selectedFile.name.replace(/\.[^.]+$/, '');
-                filename2 = base2 + '_minuta';
-              }
-
-              const blobUrl2 = URL.createObjectURL(blobResp);
-              const a2 = document.createElement('a');
-              a2.href = blobUrl2;
-              a2.download = filename2;
-              document.body.appendChild(a2);
-              a2.click();
-              a2.remove();
-              URL.revokeObjectURL(blobUrl2);
-            }
-          } catch (err) {
-            let msg = err?.message || 'Error en la generación';
-            if (err?.response && err.response.data) {
-              try {
-                const errBlob = err.response.data;
-                if (typeof errBlob.text === 'function') {
-                  const txt = await errBlob.text();
-                  try { msg = JSON.parse(txt)?.message || txt; } catch { msg = txt; }
+              if (errores.hasOwnProperty(key) && errores[key]) {
+          hasError = true;
+                errorMsg += key + ": " + errores[key] + "\n";
+                if (elErr) {
+                  elErr.textContent = errores[key];
+                  elErr.classList.remove('d-none');
                 }
-              } catch (e) {}
-            }
-            alert(msg);
-          } finally {
-            Object.values(buttons).forEach(b => b.disabled = false);
-          }
-        })();
-      }, { once: true });
-
-      bsModal.show();
-    };
-
-    const startFlow = () => {
-      cleanupModalState();
-      setTimeout(() => showModalFor(0), 60);
-    };
-
-    if (modalMainEl && modalMain) {
-      modalMainEl.addEventListener('hidden.bs.modal', startFlow, { once: true });
-      modalMain.hide();
-    } else {
-      startFlow();
-    }
-
-  } catch (err) {
-    let msg = err?.message || 'Error en la subida';
-    if (err?.response && err.response.data) {
-      try {
-        const errBlob = err.response.data;
-        if (typeof errBlob.text === 'function') {
-          const txt = await errBlob.text();
-          try { msg = JSON.parse(txt)?.message || txt; } catch { msg = txt; }
+              } else if (elErr) {
+                elErr.textContent = '';
+                elErr.classList.add('d-none');
         }
-      } catch (e) {}
-    }
-    alert(msg);
-  } finally {
-    Object.values(buttons).forEach(b => b.disabled = false);
+      }
+
+      if (hasError) {
+              alert('Corrige los errores antes de continuar.\n' + errorMsg);
+        return;
+      }
+
+      resultados.push({ persona: p, valores, errores });
+      bsModal.hide();
+          });
+
+          modalEl.addEventListener('hidden.bs.modal', () => {
+            modalEl.remove();
+            if (resultados.length === i + 1) {
+              if (i + 1 < personas.length) {
+                showModalFor(i + 1);
+              } else {
+                (async () => {
+    try {
+      const fd2 = new FormData();
+      fd2.append('file', selectedFile);
+      fd2.append('resultados', JSON.stringify(resultados));
+
+      const resp2 = await axios.post('/genera-minuta', fd2, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        responseType: 'blob'
+      });
+
+                    const blobResp = resp2.data;
+                    const contentType2 = (resp2.headers && resp2.headers['content-type']) || '';
+
+                    if (contentType2.includes('application/json')) {
+                      const text = await blobResp.text();
+                      let data2;
+                      try { data2 = JSON.parse(text); } catch { data2 = { message: text }; }
+                      selectedFile = null; fileInput.value = ''; fileNameEl.textContent = '';
+                      const modalElMain = document.getElementById('modalCreaDesignes');
+                      if (modalElMain) {
+                        const bsModalMain = bootstrap.Modal.getInstance(modalElMain) || new bootstrap.Modal(modalElMain);
+                        bsModalMain.hide();
+                      }
+                      alert(data2?.message || 'Operación completada');
+                    } else {
+                      const cd2 = (resp2.headers && (resp2.headers['content-disposition'] || resp2.headers['Content-Disposition'])) || '';
+                      let filename2 = 'download';
+                      const m2 = cd2.match(/filename\*?=(?:UTF-8'')?["']?([^;"']+)/i);
+                      if (m2 && m2[1]) {
+                        try { filename2 = decodeURIComponent(m2[1]); } catch { filename2 = m2[1]; }
+                      } else if (selectedFile && selectedFile.name) {
+                        const base2 = selectedFile.name.replace(/\.[^.]+$/, '');
+                        filename2 = base2 + '_minuta';
+      }
+
+                      const blobUrl2 = URL.createObjectURL(blobResp);
+                      const a2 = document.createElement('a');
+                      a2.href = blobUrl2;
+                      a2.download = filename2;
+                      document.body.appendChild(a2);
+                      a2.click();
+                      a2.remove();
+                      URL.revokeObjectURL(blobUrl2);
+
+                      //selectedFile = null; fileInput.value = ''; fileNameEl.textContent = '';
+                      const modalElMain = document.getElementById('modalCreaDesignes');
+                      if (modalElMain) {
+                        const bsModalMain = bootstrap.Modal.getInstance(modalElMain) || new bootstrap.Modal(modalElMain);
+                        // bsModalMain.hide();
+                      }
+                      // alert('Fichero descargado');
+                    }
+    } catch (err) {
+                    let msg = err?.message || 'Error en la generación';
+                    if (err?.response && err.response.data) {
+                      try {
+                        const errBlob = err.response.data;
+                        if (typeof errBlob.text === 'function') {
+                          const txt = await errBlob.text();
+                          try { msg = JSON.parse(txt)?.message || txt; } catch { msg = txt; }
   }
+                      } catch (e) { /* ignore */ }
+                    }
+                    alert(msg);
+                  } finally {
+                    Object.values(buttons).forEach(b => b.disabled = false);
+                  }
+                })();
+              }
+            } else {
+              console.log('Proceso cancelado o modal cerrado. Datos parciales:', resultados);
+              Object.values(buttons).forEach(b => b.disabled = false);
+            }
+          }, { once: true });
+        };
+
+        showModalFor(0);
 }
+
+
+
+
+    }
+
 
     // Button clicks -> set action and upload
     buttons.designes.addEventListener('click', () => uploadFor('designes'));

@@ -2,6 +2,7 @@ from pypdf import PdfReader, PdfWriter
 from io import BytesIO
 from pathlib import Path
 import zipfile
+import tempfile
 
 def rellenar_cuestionario_en_memoria(codigo, titulo, horas, asesoria, correoelectronico, tipo):
     """Genera PDF en memoria (BytesIO) sin guardar en disco"""
@@ -36,8 +37,12 @@ def rellenar_cuestionario_en_memoria(codigo, titulo, horas, asesoria, correoelec
     return pdf_memoria
 
 
-def crear_zip_cuestionarios_directo(datos, nombre_zip='cdd.zip'):
+def crear_zip_cuestionarios_directo(datos):
     """Crea ZIP directamente desde PDFs en memoria"""
+
+    tmp_file = tempfile.NamedTemporaryFile(suffix='.zip', delete=False)
+    tmp_file.close()
+    nombre_zip = tmp_file.name
 
     with zipfile.ZipFile(nombre_zip, 'w', zipfile.ZIP_DEFLATED) as zipf:
         for dato in datos:

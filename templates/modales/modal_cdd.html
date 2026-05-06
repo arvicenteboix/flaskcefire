@@ -1,0 +1,223 @@
+
+<!-- Modal -->
+<div class="modal fade" id="modalCDD" tabindex="-1" aria-labelledby="modalCDDLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalCDDLabel">
+                    <i class="fas fa-file-pdf me-2"></i>Generador Cuestionarios CDD
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div>
+                <div class="mb-2">
+                    <div class="alert alert-info m-0 rounded-0" role="alert">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Instrucciones: Descarga la plantilla Excel, rellénala con los datos de tus cursos y súbela para generar un ZIP con los cuestionarios CDD listos para usar. <b>Tipo es: "curso", "taller", "seminario" o "grupotrabajo" para Grupo de trabajo. Las jornadas no se mapean.</b>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-outline-primary" onclick="downloadCDDExcel()">
+                    <i class="fas fa-download me-2"></i>Descargar Plantilla Excel
+                </button>
+            </div>
+
+            <div class="modal-body p-4 bg-light">
+                <div id="alertContainer"></div>
+
+                <form id="uploadForm">
+                    <div class="text-center mb-4">
+                        <div class="upload-area border border-dashed border-primary rounded-4 p-5 position-relative" id="uploadArea" style="cursor:pointer;">
+                            <i class="fas fa-cloud-upload-alt fa-4x text-primary mb-3"></i>
+                            <h3 class="text-muted mb-1">Arrastra tu archivo Excel aquí</h3>
+                            <p class="text-muted mb-4">O haz clic para seleccionar</p>
+
+                            <input type="file"
+                                   class="form-control form-control-lg d-none"
+                                   id="excelFile"
+                                   name="file"
+                                   accept=".xlsx,.xls"
+                                   required>
+
+                            <div class="mt-3 small text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Formato: Código, Título, Tipo, horas, Asesoría, Correo
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-3">
+                        <button type="submit" class="btn btn-primary btn-lg py-3" id="submitBtn">
+                            <i class="fas fa-magic me-2"></i>
+                            <span class="btn-text">Generar ZIP con Cuestionarios</span>
+                            <span class="spinner-border spinner-border-sm ms-2 d-none" role="status" id="spinner"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer bg-white">
+                <div class="w-100 text-center small text-muted">
+                    <i class="fas fa-check-circle text-success me-1"></i>
+                    Formato Excel requerido
+                    <span class="mx-2">·</span>
+                    <i class="fas fa-download text-info me-1"></i>
+                    Descarga automática del ZIP
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        // Elementos DOM
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('excelFile');
+        const submitBtn = document.getElementById('submitBtn');
+        const spinner = document.getElementById('spinner');
+        const btnText = document.querySelector('.btn-text');
+        const form = document.getElementById('uploadForm');
+        const alertContainer = document.getElementById('alertContainer');
+
+        // Drag & Drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, () => uploadArea.classList.add('bg-primary-subtle'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, () => uploadArea.classList.remove('bg-primary-subtle'), false);
+        });
+
+        uploadArea.addEventListener('drop', handleDrop, false);
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            fileInput.files = files;
+            handleFiles(files);
+        }
+
+        fileInput.addEventListener('change', () => handleFiles(fileInput.files));
+
+        function handleFiles(files) {
+            if (files.length > 0) {
+                const file = files[0];
+                if (!file.name.match(/\.(xlsx|xls)$/)) {
+                    showAlert('Solo Excel (.xlsx, .xls)', 'danger');
+                    fileInput.value = '';
+                    return;
+                }
+                
+                uploadArea.innerHTML = `
+                    <i class="fas fa-file-excel fa-3x text-success mb-3"></i>
+                    <h5 class="text-success mb-1">${file.name}</h5>
+                    <p class="text-muted mb-0">Archivo listo <span class="badge bg-success">✓</span></p>
+                    <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="resetFile()">
+                        <i class="fas fa-times me-1"></i>Cambiar archivo
+                    </button>
+                `;
+            }
+        }
+
+        function resetFile() {
+            fileInput.value = '';
+            location.reload(); // Simple reset
+        }
+
+        // AXIOS - Envío archivo
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const file = fileInput.files[0];
+            if (!file) {
+                showAlert('Selecciona un archivo Excel', 'danger');
+                return;
+            }
+
+            // Loading
+            submitBtn.disabled = true;
+            spinner.classList.remove('d-none');
+            btnText.textContent = 'Procesando Excel...';
+
+            // FormData
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                // POST con Axios
+                const response = await axios.post('/cdd', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    },
+                    responseType: 'blob'  // Para descargar ZIP
+                });
+
+                // Descarga automática ZIP
+                const url = window.URL.createObjectURL(new Blob([response.data]));
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', 'cuestionarios_cdd.zip');
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+
+                showAlert('✅ ZIP descargado correctamente', 'success');
+                
+            } catch (error) {
+                console.error('Error:', error);
+                if (error.response?.status === 401) {
+                    showAlert('Sesión expirada. Redirigiendo...', 'warning');
+                    setTimeout(() => window.location.href = '/login', 1500);
+                } else {
+                    showAlert('Error al procesar: ' + (error.response?.data || error.message), 'danger');
+                }
+            } finally {
+                // Reset UI
+                submitBtn.disabled = false;
+                spinner.classList.add('d-none');
+                btnText.textContent = 'Generar ZIP con Cuestionarios';
+            }
+        });
+
+        function showAlert(message, type = 'info') {
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            alertContainer.innerHTML = alertHtml;
+            
+            // Scroll suave
+            alertContainer.scrollIntoView({ behavior: 'smooth' });
+
+        
+    }
+    function downloadCDDExcel () {
+            axios.get('/excel_cdd', { responseType: 'blob' })
+                .then(response => {
+                    const url = window.URL.createObjectURL(new Blob([response.data]));
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.setAttribute('download', 'Plantilla_Cuestionario_CDD.xlsx');
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                })
+                .catch(error => {
+                    console.error('Error al descargar plantilla:', error);
+                    showAlert('Error al descargar plantilla: ' + (error.response?.data || error.message), 'danger');
+                });
+        }
+    </script>

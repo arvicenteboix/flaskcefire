@@ -1,5 +1,5 @@
 from werkzeug.security import check_password_hash
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
 from werkzeug.security import generate_password_hash
 import sqlite3
 import os
@@ -10,6 +10,10 @@ import json
 import correu
 from google.genai import types
 from google import genai
+import CDD.rellenar_cuestionario_cdd as cdd
+import time
+import pandas as pd
+from io import BytesIO
 
 import eventos.eventos as eventos
 
@@ -97,6 +101,7 @@ def privado():
     if not session.get("logged_in"):
         return redirect(url_for("login"))
     return render_template("privado.html", username=session.get("username"))
+
 
 
 @app.route("/logout")
@@ -297,6 +302,92 @@ def create_folder_sdgfp():
     return redirect(url_for("privado"))
 
 
+@app.route("/excel_cdd", methods=["GET"])
+def excel_cdd():
+    if not session.get("logged_in"):
+        return redirect(url_for("login"))
+    return send_file("CDD/Plantilla_Cuestionario_CDD.xlsx", as_attachment=True, download_name="Plantilla_Cuestionario_CDD.xlsx")
+
+@app.route("/cdd", methods=["GET", "POST"])
+def cdd_view():
+    if not session.get("logged_in"):
+        return redirect(url_for("login"))
+    
+    if request.method == "POST":
+        print("POST request received at /cdd")
+        archivo_excel = request.files.get("file")
+        print(f"Archivo recibido en /cdd: {archivo_excel.filename if archivo_excel else 'No file'}")
+        if archivo_excel and archivo_excel.filename:
+            try:
+                # Convertir filas del Excel a la estructura esperada para cuestionarios
+                if hasattr(archivo_excel, "stream"):
+                    archivo_excel.stream.seek(0)
+                    df = pd.read_excel(archivo_excel.stream, sheet_name=0, engine="openpyxl")
+                elif isinstance(archivo_excel, (bytes, bytearray)):
+                    df = pd.read_excel(BytesIO(archivo_excel), sheet_name=0, engine="openpyxl")
+                elif isinstance(archivo_excel, BytesIO):
+                    archivo_excel.seek(0)
+                    df = pd.read_excel(archivo_excel, sheet_name=0, engine="openpyxl")
+                else:
+                    df = pd.read_excel(archivo_excel, sheet_name=0, engine="openpyxl")
+
+                df.columns = df.columns.str.strip()
+
+                datos_cuestionarios = []
+
+                for _, row in df.iterrows():
+                    datos_cuestionarios.append({
+                        "codigo": "" if pd.isna(row["Código"]) else str(row["Código"]),
+                        "titulo": "" if pd.isna(row["Título"]) else str(row["Título"]),
+                        "horas": "" if pd.isna(row["horas"]) else str(row["horas"]),
+                        "asesoria": "" if pd.isna(row["Asesoría"]) else str(row["Asesoría"]),
+                        "correoelectronico": "" if pd.isna(row["Correo"]) else str(row["Correo"]),
+                        "tipo": "" if pd.isna(row["Tipo"]) else str(row["Tipo"])
+                })
+                # print("datos_cuestionarios:", datos_cuestionarios)
+                tmp_file =cdd.crear_zip_cuestionarios_directo(datos_cuestionarios)
+
+                return send_file(tmp_file.name, as_attachment=True, download_name="cuestionarios_cdd.zip")
+
+            except Exception as e:
+                print(f"Error al leer el Excel: {e}")
+            finally:
+                if os.path.exists("cdd.zip"):
+                    import time
+                    for _ in range(20):
+                        try:
+                            os.remove("cdd.zip")  # Limpiar el ZIP temporal después de enviarlo
+                            break
+                        except PermissionError:
+                            time.sleep(0.25)
+    
+    return render_template("cdd.html")
+""" 
+
+@app.route("/cdd")
+def cdd_view():
+    if not session.get("logged_in"):
+        return redirect(url_for("login"))
+     # Lógica para rellenar el cuestionario
+        # Aquí puedes llamar a la función rellenar_cuestionario con los datos necesarios
+        # Por ejemplo:
+
+    archivo = request.files.get("file")
+
+    cdd.crear_zip_cuestionarios_directo(archivo)
+
+    try:
+        return send_file("cdd.zip", as_attachment=True, download_name="cuestionarios_cdd.zip")
+    finally:
+        if os.path.exists("cdd.zip"):
+            for _ in range(20):
+                try:
+                    os.remove("cdd.zip")
+                    break
+                except PermissionError:
+                    time.sleep(0.25)
+
+ """
 @app.route("/designes", methods=["POST"])
 def designes():
     if not session.get("logged_in"):

@@ -17,7 +17,8 @@ def enviar_correus(app, conn):
     """Funció que envia correus a tots els contactes"""
     
     def envia(datos, tipo):
-        with app.app_context():
+        pass  # Per a proves, no enviar correus reals. Descomenta el codi real per a producció.
+        """ with app.app_context():
             # AGRUPAR por asesoria para enviar UN SOL correo por asesor
             formacions_por_asesor = {}
             for formacion in datos:
@@ -45,10 +46,11 @@ def enviar_correus(app, conn):
                     body=body
                 )
                 mail.send(msg)
-                print(f"  ✓ Enviat {tipo} a {usuari['nombre']} ({len(formacions)} formacions)")
+                print(f"  ✓ Enviat {tipo} a {usuari['nombre']} ({len(formacions)} formacions)") """
 
     def envia_david(datos):
-        with app.app_context():
+        pass
+    """         with app.app_context():
             body = "Hola, \n\nFormacions que entren en inscripció a dia de hui per a posar en Instagram:\n\n"
             for formacion in datos:
                 body += f"Formació: {formacion['codi_ed']} - {formacion['titol']} - Data Inscripció: { datetime.now().strftime('%d/%m/%y')}\n"
@@ -60,14 +62,15 @@ def enviar_correus(app, conn):
                 recipients=['ar.vicenteboix@edu.gva.es'],
                 body=body
             )
-            mail.send(msg)
-    '''
+            mail.send(msg) 
+    
     def envia_david(datos):
         print ("Execute david")
 
     def envia(datos, tipo):
         print(f"  ✓ Enviant {tipo} a {len(datos)} formacions...")
-    '''
+    """
+
     print(datetime.now(), "Enviant correus...")
     cursor = conn.cursor()
     cursor.execute("SELECT id, username, nombre, email FROM users")

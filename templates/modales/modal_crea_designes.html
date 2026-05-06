@@ -660,21 +660,30 @@
             </div>
           </div>`;
             document.body.insertAdjacentHTML('beforeend', html);
-            const modalEl = document.getElementById(modalId);
-            const bsModal = new bootstrap.Modal(modalEl);
-            bsModal.show();
+            const modalEl2 = document.getElementById(modalId);
+            const modalMainEl = document.getElementById('modalCreaDesignes');
+            
+            if (modalMainEl) {
+              const bsModalMain = bootstrap.Modal.getInstance(modalMainEl);
+              if (bsModalMain) bsModalMain.hide();
+              document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+              //document.body.classList.remove('modal-open');
+              //document.body.style.removeProperty('padding-right');
+            }
+            const bsModal2 = new bootstrap.Modal(modalEl2);
+            bsModal2.show();
 
-            const nextBtn = modalEl.querySelector('#nextBtn');
+            const nextBtn = modalEl2.querySelector('#nextBtn');
             nextBtn.addEventListener('click', () => {
-              const fecha = modalEl.querySelector('#fechaInput').value;
-              const centro = modalEl.querySelector('#centroInput').value.trim();
-              const cargo = modalEl.querySelector('#cargoInput').value.trim();
+              const fecha = modalEl2.querySelector('#fechaInput').value;
+              const centro = modalEl2.querySelector('#centroInput').value.trim();
+              const cargo = modalEl2.querySelector('#cargoInput').value.trim();
               resultados.push({ persona: p, fecha, centro, cargo });
-              bsModal.hide();
+              bsModal2.hide();
             });
 
-            modalEl.addEventListener('hidden.bs.modal', async () => {
-              modalEl.remove();
+            modalEl2.addEventListener('hidden.bs.modal', async () => {
+              modalEl2.remove();
               if (resultados.length === i + 1) {
                 if (i + 1 < personas.length) showModalFor(i + 1);
                 else {

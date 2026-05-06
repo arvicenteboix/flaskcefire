@@ -222,7 +222,7 @@ def generar_certifica_sdgfp(datos, identificativos, campana, numero_a_letras=lam
 
     encabezado = doc.add_paragraph()
     encabezado.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    encabezado.add_run("\nDANIEL MCEVOY BRAVO, SECRETARI AUTONÒMIC D’EDUCACIÓ\n \n")
+    encabezado.add_run("\nALFREDO RAFAEL VICENTE BOIX, DIRECTOR DEL CEFIRE DE FORMACIÓ PROFESSIONAL I ENSENYANCES ARTÍSTIQUES I ESPORTIVES\n \n")
 
     tabla = doc.add_table(rows=1, cols=2)
     tabla.autofit = False
@@ -1002,7 +1002,7 @@ def generar_skills_certifica(datos, identificativos, numero_a_letras=lambda x:st
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     # p.add_run("\n\nCarolina Part Julio, Subdirectora General d'Innovació, Orientació i Acreditació Professional, de la Direcció General de Formació Professional.\n").bold = True
 
-    p.add_run("\n\nCarolina Part Julio, Subdirectora General d'Orientació y Qualificació Professional y de l'IVQP, de la Direcció General de Formació Professional.\n").bold = True
+    p.add_run("\n\nAlfredo Rafael Vicente Boix, director del CEFIRE de Formació Professional i Ensenyances artístiques i esportives\n").bold = True
 
     # Subdirección General de Orientación y Cualificación Profesional y del IVCP
 
@@ -1204,7 +1204,7 @@ def generar_skills_certifica(datos, identificativos, numero_a_letras=lambda x:st
     p_firma.alignment = WD_ALIGN_PARAGRAPH.CENTER
     # p_firma.add_run("Carolina Part Julio, Subdirectora General d'Innovació, Orientació i Acreditació Professional, de la Direcció General de Formació Professional")
 
-    p_firma.add_run("Carolina Part Julio, Subdirectora General d'Orientació y Qualificació Professional y de l'IVQP, de la Direcció General de Formació Professional.")
+    p_firma.add_run("Alfredo Rafael Vicente Boix, director del CEFIRE de Formació Professional i Ensenyances artístiques i esportives")
 
 
 

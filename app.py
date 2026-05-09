@@ -1049,3 +1049,90 @@ def imatgedates():
         print(response.text)
         return jsonify(resp_text)
     
+
+
+@app.route("/usuaris", methods=["GET"])
+def usuaris():
+    if not session.get("logged_in"):
+        return redirect(url_for("login"))
+
+    current_user = conn.cursor().execute(
+        "SELECT username FROM users WHERE id = ?",
+        (session.get("user_id"),)
+    ).fetchone()
+
+    if not current_user or current_user["username"] not in ["alfredo", "alviboi", "gmunoz"]:
+        return jsonify({"error": "No estás autorizado"}), 403
+    
+
+    rows = conn.cursor().execute(
+        "SELECT id, username, nombre, apellidos, email, api_key FROM users ORDER BY id"
+    ).fetchall()
+    usuarios = [dict(row) for row in rows]
+    return jsonify(usuarios)
+
+@app.route("/usuaris/update", methods=["POST"])
+def usuaris_update():
+    if not session.get("logged_in"):
+        return redirect(url_for("login"))
+    
+    current_user = conn.cursor().execute(
+        "SELECT username FROM users WHERE id = ?",
+        (session.get("user_id"),)
+    ).fetchone()
+
+    if not current_user or current_user["username"] not in ["alfredo", "alviboi", "gmunoz"]:
+        return jsonify({"error": "No estás autorizado"}), 403
+
+    data = request.get_json()
+    if not data or not data.get("id"):
+        return jsonify({"error": "Falta ID"}), 400
+
+    try:
+        conn.execute(
+            """
+            UPDATE users
+            SET username=?, nombre=?, apellidos=?, email=?
+            WHERE id=?
+            """,
+            (
+                data.get("username"),
+                data.get("nombre"),
+                data.get("apellidos"),
+                data.get("email"),
+                data["id"],
+            ),
+        )
+        conn.commit()
+        # Devolver el usuario actualizado
+        row = conn.execute(
+            "SELECT id, username, nombre, apellidos, email, api_key FROM users WHERE id=?",
+            (data["id"],),
+        ).fetchone()
+        return jsonify(dict(row))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@app.route("/usuaris/delete", methods=["POST"])
+def usuaris_delete():
+    if not session.get("logged_in"):
+        return redirect(url_for("login"))
+    
+    current_user = conn.cursor().execute(
+        "SELECT username FROM users WHERE id = ?",
+        (session.get("user_id"),)
+    ).fetchone()
+
+    if not current_user or current_user["username"] not in ["alfredo", "alviboi", "gmunoz"]:
+        return jsonify({"error": "No estás autorizado"}), 403
+
+    user_id = request.args.get("id")
+    if not user_id:
+        return jsonify({"error": "Falta ID"}), 400
+
+    try:
+        conn.execute("DELETE FROM users WHERE id=?", (user_id,))
+        conn.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

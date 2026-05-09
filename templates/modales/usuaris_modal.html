@@ -1,0 +1,274 @@
+<div class="modal fade" id="UsuarisModal" tabindex="-1" aria-labelledby="UsuarisModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="UsuarisModalLabel">Usuaris</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+          <div>
+            <p class="mb-0 text-muted">Llista d'usuaris</p>
+          </div>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary" data-action="reload-users">
+              Recargar
+            </button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-striped table-hover align-middle" id="UsuarisModalTable">
+            <thead class="table-light">
+              <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Nombre</th>
+                <th>Apellidos</th>
+                <th>Email</th>
+                <th>API Key</th>
+                <th>Accions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="7" class="text-center text-muted py-4">Encara no s'han carregat usuaris.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="alert alert-danger d-none mt-3" role="alert" data-role="users-error"></div>
+      </div>
+
+      <div class="modal-footer justify-content-between">
+        <small class="text-muted" data-role="users-status">Preparat per a carregar dades.</small>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tancar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const modalId = 'UsuarisModal';
+  const modalEl = document.getElementById(modalId);
+  if (!modalEl || modalEl.dataset.usersBound === '1') return;
+  modalEl.dataset.usersBound = '1';
+
+  const tbody = modalEl.querySelector('tbody');
+  const errorBox = modalEl.querySelector('[data-role="users-error"]');
+  const statusBox = modalEl.querySelector('[data-role="users-status"]');
+  const reloadBtn = modalEl.querySelector('[data-action="reload-users"]');
+
+  function escapeHtml(value) {
+    if (value === null || value === undefined) return '';
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function maskApiKey(apiKey) {
+    if (!apiKey) return '<span class="text-muted">-</span>';
+    const visible = apiKey.length > 8 ? apiKey.slice(0, 4) + '••••' + apiKey.slice(-4) : '••••••••';
+    return `<code>${escapeHtml(visible)}</code>`;
+  }
+
+  function setLoading() {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" class="text-center py-4">
+          <div class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></div>
+          Carregant usuaris...
+        </td>
+      </tr>`;
+    errorBox.classList.add('d-none');
+    errorBox.textContent = '';
+    statusBox.textContent = 'Carregant dades...';
+    if (reloadBtn) reloadBtn.disabled = true;
+  }
+
+  function setError(message) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" class="text-center text-danger py-4">No s'han pogut carregar els usuaris.</td>
+      </tr>`;
+    errorBox.textContent = message;
+    errorBox.classList.remove('d-none');
+    statusBox.textContent = 'Error en la càrrega.';
+    if (reloadBtn) reloadBtn.disabled = false;
+  }
+
+  function rowToInputs(user) {
+    return `
+      <tr data-id="${escapeHtml(user.id)}" data-state="editing">
+        <td>${escapeHtml(user.id)}</td>
+        <td><input class="form-control form-control-sm" name="username" value="${escapeHtml(user.username || '')}" /></td>
+        <td><input class="form-control form-control-sm" name="nombre" value="${escapeHtml(user.nombre || '')}" /></td>
+        <td><input class="form-control form-control-sm" name="apellidos" value="${escapeHtml(user.apellidos || '')}" /></td>
+        <td><input class="form-control form-control-sm" name="email" value="${escapeHtml(user.email || '')}" /></td>
+        <td>${maskApiKey(user.api_key)}</td>
+        <td>
+          <button type="button" class="btn btn-sm btn-success me-1" data-action="save-user">
+            <i class="fas fa-check"></i>
+          </button>
+          <button type="button" class="btn btn-sm btn-danger" data-action="delete-user">
+            <i class="fas fa-trash-alt"></i>
+          </button>
+        </td>
+      </tr>`;
+  }
+
+  function rowToView(user) {
+    return `
+      <tr data-id="${escapeHtml(user.id)}" data-state="view">
+        <td>${escapeHtml(user.id)}</td>
+        <td><strong>${escapeHtml(user.username)}</strong></td>
+        <td>${escapeHtml(user.nombre || '-')}</td>
+        <td>${escapeHtml(user.apellidos || '-')}</td>
+        <td>${user.email ? `<a href="mailto:${escapeHtml(user.email)}">${escapeHtml(user.email)}</a>` : '<span class="text-muted">-</span>'}</td>
+        <td>${maskApiKey(user.api_key)}</td>
+        <td>
+          <button type="button" class="btn btn-sm btn-primary me-1" data-action="edit-user">
+            <i class="fas fa-edit"></i> Editar
+          </button>
+          <button type="button" class="btn btn-sm btn-danger" data-action="delete-user">
+            <i class="fas fa-trash-alt"></i>
+          </button>
+        </td>
+      </tr>`;
+  }
+
+  function renderUsers(users) {
+    if (!Array.isArray(users) || users.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" class="text-center text-muted py-4">No hi ha usuaris disponibles.</td>
+        </tr>`;
+      statusBox.textContent = '0 usuaris carregats.';
+      if (reloadBtn) reloadBtn.disabled = false;
+      return;
+    }
+
+    tbody.innerHTML = users.map(rowToView).join(''); // por defecto modo "view"
+    statusBox.textContent = `${users.length} usuaris carregats.`;
+    if (reloadBtn) reloadBtn.disabled = false;
+  }
+
+  async function loadUsers() {
+    setLoading();
+    try {
+      const response = await fetch('/usuaris', {
+        headers: { 'Accept': 'application/json' }
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || err.message || `Error HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      renderUsers(data);
+    } catch (error) {
+      setError(error.message || 'Error desconegut carregant usuaris.');
+    }
+  }
+
+  // Evento de apertura del modal → cargar usuarios
+  modalEl.addEventListener('shown.bs.modal', loadUsers);
+  if (reloadBtn) reloadBtn.addEventListener('click', loadUsers);
+
+  // Delegación de eventos en la tabla
+  tbody.addEventListener('click', async function (e) {
+    const row = e.target.closest('tr');
+    if (!row) return;
+    const userId = row.dataset.id;
+
+    // EDITAR
+    if (e.target.matches('[data-action="edit-user"]')) {
+      const viewRow = row;
+      const user = {
+        id: userId,
+        username: viewRow.children[1].textContent.trim(),   // <td><strong>username</strong></td>
+        nombre: viewRow.children[2].textContent.trim(),
+        apellidos: viewRow.children[3].textContent.trim(),
+        email: viewRow.children[4].textContent.trim() || '',
+      };
+      viewRow.outerHTML = rowToInputs(user);
+      return;
+    }
+
+    // GUARDAR (update) y ELIMINAR
+    // ... (el resto igual que ya tienes)
+
+    // GUARDAR (update)
+    if (e.target.closest('[data-action="save-user"]')) {
+      const editingRow = row;
+      const userData = {
+        id: userId,
+        username: editingRow.querySelector('[name="username"]').value.trim(),
+        nombre: editingRow.querySelector('[name="nombre"]').value.trim(),
+        apellidos: editingRow.querySelector('[name="apellidos"]').value.trim(),
+        email: editingRow.querySelector('[name="email"]').value.trim(),
+      };
+
+      if (!userData.username) {
+        setError('El camp "username" és obligatori.');
+        return;
+      }
+
+      try {
+        const response = await fetch('/usuaris/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(userData)
+        });
+
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.message || 'Error actualitzant usuari.');
+        }
+
+        const updatedUser = await response.json();
+        editingRow.outerHTML = rowToView(updatedUser); // volver a modo vista
+        statusBox.textContent = `Usuari amb ID ${updatedUser.id} actualitzat.`;
+      } catch (error) {
+        setError(error.message || 'Error actualitzant usuari.');
+      }
+      return;
+    }
+
+    // ELIMINAR
+        // ELIMINAR
+    if (e.target.closest('[data-action="delete-user"]')) {
+      const btn = e.target.closest('[data-action="delete-user"]');
+      const row = btn.closest('tr');
+      const userId = row.dataset.id;
+
+      if (!confirm(`Eliminar usuari ID ${userId}?`)) return;
+
+      try {
+        const response = await fetch(`/usuaris/delete?id=${encodeURIComponent(userId)}`, {
+          method: 'POST'
+        });
+
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.message || 'Error eliminant usuari.');
+        }
+
+        row.remove();
+        const remaining = tbody.querySelectorAll('tr').length;
+        statusBox.textContent = `${remaining} usuaris carregats.`;
+      } catch (error) {
+        setError(error.message || 'Error eliminant usuari.');
+      }
+      return;
+    }
+  });
+})();
+</script>

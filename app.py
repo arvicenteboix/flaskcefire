@@ -347,7 +347,7 @@ def cdd_view():
                 # print("datos_cuestionarios:", datos_cuestionarios)
                 tmp_file =cdd.crear_zip_cuestionarios_directo(datos_cuestionarios)
 
-                return send_file(tmp_file.name, as_attachment=True, download_name="cuestionarios_cdd.zip")
+                return send_file(tmp_file, as_attachment=True, download_name="cuestionarios_cdd.zip")
 
             except Exception as e:
                 print(f"Error al leer el Excel: {e}")

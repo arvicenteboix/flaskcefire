@@ -796,7 +796,7 @@ def generar_skills_resolc(datos, identificativos, partida, fecha, centre_educati
             modalidad_text = f"presencial"
         designa_text = (
             f"Vist l'informe del director del CEFIRE de Formació Professional i Ensenyances artístiques i esportives del {fecha}, corresponent a la formació {codigo} - {curso} "
-            f"realitzada de manera{modalidad_text} del {fechas}.\n"
+            f"realitzada de manera {modalidad_text} del {fechas}.\n"
             f"Vist que els professors de la formació han realitzat en els termes establits i de manera adequada la labor "
             f"per a la qual van ser designats."
         )

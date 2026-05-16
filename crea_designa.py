@@ -1651,7 +1651,10 @@ def on_process(json_data, hoja_excel, tipo, resultados=None, minuta_datos=None, 
                 if t == "des":
                     buffers = []
                     for persona in personas:
-                        buffer, path = generar_skills(datos=persona, identificativos=hoja_excel, partida="G01090205GE00000.422C00.22699 fons TE22000053")
+                        if persona.get('jurídico', '').strip().lower() == "funcionario gva":
+                            buffer, path = generar_skills(datos=persona, identificativos=hoja_excel, partida="G01090205GE00000.422C00.23302 fons TE22000053")
+                        else:
+                            buffer, path = generar_skills(datos=persona, identificativos=hoja_excel, partida="G01090205GE00000.422C00.22606 fons TE22000053")
                         buffers.append((buffer, path))
                     return (buffers)
                 elif t == "cer":
@@ -1680,7 +1683,10 @@ def on_process(json_data, hoja_excel, tipo, resultados=None, minuta_datos=None, 
                         print ("CARREC:", carrec)
                         fecha_obj = datetime.strptime(fecha, "%Y-%m-%d")  # ajusta el formato de entrada
                         formato_deseado = fecha_obj.strftime("%d/%m/%Y")
-                        buffer, path = generar_skills_resolc(datos=persona, identificativos=hoja_excel, fecha=formato_deseado,  centre_educatiu=centre_educatiu, carrec=carrec,partida="G01090205GE00000.422C00.22699 fons TE22000053")
+                        if persona.get('jurídico', '').strip().lower() == "funcionario gva":
+                            buffer, path = generar_skills_resolc(datos=persona, identificativos=hoja_excel, fecha=formato_deseado,  centre_educatiu=centre_educatiu, carrec=carrec,partida="G01090205GE00000.422C00.23302 fons TE22000053")
+                        else:
+                            buffer, path = generar_skills_resolc(datos=persona, identificativos=hoja_excel, fecha=formato_deseado,  centre_educatiu=centre_educatiu, carrec=carrec,partida="G01090205GE00000.422C00.22699 fons TE22000053")
                         print (path)
                         print (buffer)
                         buffers3.append((buffer, path))

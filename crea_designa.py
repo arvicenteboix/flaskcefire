@@ -1616,6 +1616,16 @@ def on_process(json_data, hoja_excel, tipo, resultados=None, minuta_datos=None, 
         fecha = ""
         centre_educatiu = ""
         carrec = ""        
+
+        def obtener_juridico(persona):
+            juridico = str(persona.get('JURÍDICO', '')).strip()
+            if juridico:
+                return juridico
+            for mov in persona.get('Movimientos', []):
+                juridico = str(mov.get('JURÍDICO', '')).strip()
+                if juridico:
+                    return juridico
+            return ""
         
         global t
         t = tipo
@@ -1651,7 +1661,9 @@ def on_process(json_data, hoja_excel, tipo, resultados=None, minuta_datos=None, 
                 if t == "des":
                     buffers = []
                     for persona in personas:
-                        if persona.get('JURÍDICO', '').strip().lower() == "funcionario gva":
+                        print (persona)
+                        juridico = obtener_juridico(persona).lower()
+                        if juridico == "funcionario gva":
                             buffer, path = generar_skills(datos=persona, identificativos=hoja_excel, partida="G01090205GE00000.422C00.23302 fons TE22000053")
                         else:
                             buffer, path = generar_skills(datos=persona, identificativos=hoja_excel, partida="G01090205GE00000.422C00.22606 fons TE22000053")
@@ -1683,7 +1695,8 @@ def on_process(json_data, hoja_excel, tipo, resultados=None, minuta_datos=None, 
                         print ("CARREC:", carrec)
                         fecha_obj = datetime.strptime(fecha, "%Y-%m-%d")  # ajusta el formato de entrada
                         formato_deseado = fecha_obj.strftime("%d/%m/%Y")
-                        if persona.get('JURÍDICO', '').strip().lower() == "funcionario gva":
+                        juridico = obtener_juridico(persona).lower()
+                        if juridico == "funcionario gva":
                             buffer, path = generar_skills_resolc(datos=persona, identificativos=hoja_excel, fecha=formato_deseado,  centre_educatiu=centre_educatiu, carrec=carrec,partida="G01090205GE00000.422C00.23302 fons TE22000053")
                         else:
                             buffer, path = generar_skills_resolc(datos=persona, identificativos=hoja_excel, fecha=formato_deseado,  centre_educatiu=centre_educatiu, carrec=carrec,partida="G01090205GE00000.422C00.22606 fons TE22000053")

@@ -1661,8 +1661,11 @@ def on_process(json_data, hoja_excel, tipo, resultados=None, minuta_datos=None, 
                 if t == "des":
                     buffers = []
                     for persona in personas:
-                        print (persona)
-                        juridico = obtener_juridico(persona).lower()
+                        juridico = ""
+                        while not juridico:
+                            juridico = str(obtener_juridico(persona) or "").strip().lower()
+                            if not juridico:
+                                __import__("time").sleep(0.1)
                         if juridico == "funcionario gva":
                             buffer, path = generar_skills(datos=persona, identificativos=hoja_excel, partida="G01090205GE00000.422C00.23302 fons TE22000053")
                         else:

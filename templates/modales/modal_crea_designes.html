@@ -662,7 +662,7 @@
             document.body.insertAdjacentHTML('beforeend', html);
             const modalEl2 = document.getElementById(modalId);
             const modalMainEl = document.getElementById('modalCreaDesignes');
-            
+
             if (modalMainEl) {
               const bsModalMain = bootstrap.Modal.getInstance(modalMainEl);
               if (bsModalMain) bsModalMain.hide();
@@ -782,126 +782,126 @@
 
     }
 
-async function uploadForMinuta() {
-  if (!selectedFile) {
-    alert('Selecciona un archivo primero.');
-    return;
-  }
+    async function uploadForMinuta() {
+      if (!selectedFile) {
+        alert('Selecciona un archivo primero.');
+        return;
+      }
 
-  const url = '/minuta-dgfp';
-  const fd = new FormData();
-  fd.append('file', selectedFile);
+      const url = '/minuta-dgfp';
+      const fd = new FormData();
+      fd.append('file', selectedFile);
 
-  try {
-    const resp = await axios.post(url, fd, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-      responseType: 'json'
-    });
-
-    let data = resp.data;
-    let tram;
-
-    console.log('Respuesta recibida:', typeof data, data);
-
-    if (typeof data === 'string') {
       try {
-        const cleaned = data
-          .replace(/\bNaN\b/g, 'null')
-          .replace(/\bInfinity\b/g, 'null')
-          .replace(/\b-Infinity\b/g, 'null');
-        tram = JSON.parse(cleaned);
-        console.log('JSON parseado:', tram);
-      } catch (e) {
-        console.error('Error parsing JSON string:', e);
-        tram = [];
-      }
-    } else if (typeof data === 'object' && data !== null) {
-      tram = data;
-    } else {
-      console.error('Respuesta inesperada del servidor:', data);
-      tram = [];
-    }
+        const resp = await axios.post(url, fd, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          responseType: 'json'
+        });
 
-    console.log('Datos procesados:', tram);
+        let data = resp.data;
+        let tram;
 
-    const personas = tram['personas'] || [];
-    const identificativos = tram['identificativos'] || {};
+        console.log('Respuesta recibida:', typeof data, data);
 
-    console.log('Personas extraídas:', personas);
+        if (typeof data === 'string') {
+          try {
+            const cleaned = data
+              .replace(/\bNaN\b/g, 'null')
+              .replace(/\bInfinity\b/g, 'null')
+              .replace(/\b-Infinity\b/g, 'null');
+            tram = JSON.parse(cleaned);
+            console.log('JSON parseado:', tram);
+          } catch (e) {
+            console.error('Error parsing JSON string:', e);
+            tram = [];
+          }
+        } else if (typeof data === 'object' && data !== null) {
+          tram = data;
+        } else {
+          console.error('Respuesta inesperada del servidor:', data);
+          tram = [];
+        }
 
-    if (!personas.length) {
-      alert('No hay personas en la respuesta');
-      return;
-    }
+        console.log('Datos procesados:', tram);
 
-    const resultados = [];
+        const personas = tram['personas'] || [];
+        const identificativos = tram['identificativos'] || {};
 
-    const onlyText = s => /^[A-Za-zÀ-ÖØ-öø-ÿ\s'’-]+$/.test((s || '').toString().trim());
-    const nifValido = s => /^[0-9]{8}[A-Za-z]$/.test((s || '').toString().trim());
-    const textoNumeros = s => /^[A-Za-z0-9À-ÖØ-öø-ÿ\s\.,'’()_\+\-\/\\:;%&@#\*\=\?\!¿¡]*$/.test((s || '').toString().trim());
-    const cpValido = s => /^\d{5}$/.test((s || '').toString().trim());
-    const soloCifras = s => /^\d+(\.\d+)?$/.test((s || '').toString().trim());
-    const ibanValido = s => /^[A-Z]{2}[0-9A-Z]{13,30}$/.test(((s || '').toString().replace(/\s+/g, '')).toUpperCase());
-    const emailValido = s => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s || '').toString().trim());
-    const telefonoValido = s => /^\d{9}$/.test((s || '').toString().trim());
+        console.log('Personas extraídas:', personas);
 
-    const modalMainEl = document.getElementById('modalCreaDesignes');
-    const modalMain = modalMainEl ? bootstrap.Modal.getInstance(modalMainEl) : null;
+        if (!personas.length) {
+          alert('No hay personas en la respuesta');
+          return;
+        }
 
-    const cleanupModalState = () => {
-      document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
-      document.body.classList.remove('modal-open');
-      document.body.style.removeProperty('padding-right');
-      document.body.style.removeProperty('overflow');
-    };
+        const resultados = [];
 
-    const showModalFor = (i) => {
-      const p = personas[i] || {};
-      const modalId = `modalMinuta_${i}`;
+        const onlyText = s => /^[A-Za-zÀ-ÖØ-öø-ÿ\s'’-]+$/.test((s || '').toString().trim());
+        const nifValido = s => /^[0-9]{8}[A-Za-z]$/.test((s || '').toString().trim());
+        const textoNumeros = s => /^[A-Za-z0-9À-ÖØ-öø-ÿ\s\.,'’()_\+\-\/\\:;%&@#\*\=\?\!¿¡]*$/.test((s || '').toString().trim());
+        const cpValido = s => /^\d{5}$/.test((s || '').toString().trim());
+        const soloCifras = s => /^\d+(\.\d+)?$/.test((s || '').toString().trim());
+        const ibanValido = s => /^[A-Z]{2}[0-9A-Z]{13,30}$/.test(((s || '').toString().replace(/\s+/g, '')).toUpperCase());
+        const emailValido = s => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s || '').toString().trim());
+        const telefonoValido = s => /^\d{9}$/.test((s || '').toString().trim());
 
-      const oldModal = document.getElementById(modalId);
-      if (oldModal) {
-        const oldInstance = bootstrap.Modal.getInstance(oldModal);
-        if (oldInstance) oldInstance.dispose();
-        oldModal.remove();
-      }
+        const modalMainEl = document.getElementById('modalCreaDesignes');
+        const modalMain = modalMainEl ? bootstrap.Modal.getInstance(modalMainEl) : null;
 
-      cleanupModalState();
+        const cleanupModalState = () => {
+          document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+          document.body.classList.remove('modal-open');
+          document.body.style.removeProperty('padding-right');
+          document.body.style.removeProperty('overflow');
+        };
 
-      const movimientos = (p.Movimientos && Array.isArray(p.Movimientos)) ? p.Movimientos : [];
-      const importeBruto = movimientos.reduce((sum, mov) => {
-        const importe = mov['IMPORTE / IMPORT (€)'] != null
-          ? parseFloat(mov['IMPORTE / IMPORT (€)'])
-          : 0;
-        return sum + importe;
-      }, 0);
+        const showModalFor = (i) => {
+          const p = personas[i] || {};
+          const modalId = `modalMinuta_${i}`;
 
-      const nombreCurso = [
-        identificativos['CÓDIGO EDICIÓN / CODI EDICIÓ'] || '',
-        identificativos['TÍTULO ACCIÓN FORMATIVA / TÍTOL ACCIÓ FORMATIVA'] || ''
-      ].filter(Boolean).join(' - ');
+          const oldModal = document.getElementById(modalId);
+          if (oldModal) {
+            const oldInstance = bootstrap.Modal.getInstance(oldModal);
+            if (oldInstance) oldInstance.dispose();
+            oldModal.remove();
+          }
 
-      const pre = {
-        "Nombre y Apellidos": p.Nombre || '',
-        "NIF": p.DNI || '',
-        "Domicili": p.Domicili || '',
-        "CP": p.CP || '',
-        "Población": p.Población || '',
-        "Provincia": p.Provincia || '',
-        "Nombre del curso": nombreCurso,
-        "Importe bruto": importeBruto ? String(importeBruto) : '0',
-        "Importe neto": importeBruto ? String(importeBruto - 0.15 * importeBruto) : '0',
-        "IBAN": p.IBAN || '',
-        "BIC": p.BIC || '',
-        "Email": p.Email || '',
-        "Teléfono": p.Teléfono || p.Telefono || '',
-        "Grup": p.Grup || '',
-        "Nivell": p.Nivell || '',
-        "Relacio_juridica": p.Relacio_juridica || p.JUR || '',
-        "Dates_inici_final": identificativos['FECHAS REALIZACIÓN / DATES REALITZACIÓ'] || ''
-      };
+          cleanupModalState();
 
-      const html = `
+          const movimientos = (p.Movimientos && Array.isArray(p.Movimientos)) ? p.Movimientos : [];
+          const importeBruto = movimientos.reduce((sum, mov) => {
+            const importe = mov['IMPORTE / IMPORT (€)'] != null
+              ? parseFloat(mov['IMPORTE / IMPORT (€)'])
+              : 0;
+            return sum + importe;
+          }, 0);
+
+          const nombreCurso = [
+            identificativos['CÓDIGO EDICIÓN / CODI EDICIÓ'] || '',
+            identificativos['TÍTULO ACCIÓN FORMATIVA / TÍTOL ACCIÓ FORMATIVA'] || ''
+          ].filter(Boolean).join(' - ');
+
+          const pre = {
+            "Nombre y Apellidos": p.Nombre || '',
+            "NIF": p.DNI || '',
+            "Domicili": p.Domicili || '',
+            "CP": p.CP || '',
+            "Población": p.Población || '',
+            "Provincia": p.Provincia || '',
+            "Nombre del curso": nombreCurso,
+            "Importe bruto": importeBruto ? String(importeBruto) : '0',
+            "Importe neto": importeBruto ? String(importeBruto - 0.15 * importeBruto) : '0',
+            "IBAN": p.IBAN || '',
+            "BIC": p.BIC || '',
+            "Email": p.Email || '',
+            "Teléfono": p.Teléfono || p.Telefono || '',
+            "Grup": p.Grup || '',
+            "Nivell": p.Nivell || '',
+            "Relacio_juridica": p.Relacio_juridica || p.JUR || '',
+            "Dates_inici_final": identificativos['FECHAS REALIZACIÓN / DATES REALITZACIÓ'] || ''
+          };
+
+          const html = `
         <div class="modal fade" id="${modalId}" tabindex="-1" aria-hidden="true">
           <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -946,189 +946,189 @@ async function uploadForMinuta() {
         </div>
       `;
 
-      document.body.insertAdjacentHTML('beforeend', html);
+          document.body.insertAdjacentHTML('beforeend', html);
 
-      const modalEl = document.getElementById(modalId);
-      const bsModal = new bootstrap.Modal(modalEl, {
-        backdrop: 'static',
-        keyboard: false,
-        focus: true
-      });
+          const modalEl = document.getElementById(modalId);
+          const bsModal = new bootstrap.Modal(modalEl, {
+            backdrop: 'static',
+            keyboard: false,
+            focus: true
+          });
 
-      let confirmed = false;
+          let confirmed = false;
 
-      modalEl.querySelector('.js-close-minuta').addEventListener('click', () => bsModal.hide());
-      modalEl.querySelector('.js-cancel-minuta').addEventListener('click', () => bsModal.hide());
+          modalEl.querySelector('.js-close-minuta').addEventListener('click', () => bsModal.hide());
+          modalEl.querySelector('.js-cancel-minuta').addEventListener('click', () => bsModal.hide());
 
-      const nextBtn = modalEl.querySelector(`#${modalId}_nextBtn`);
+          const nextBtn = modalEl.querySelector(`#${modalId}_nextBtn`);
 
-      nextBtn.addEventListener('click', () => {
-        const valores = {};
-        const errores = {};
+          nextBtn.addEventListener('click', () => {
+            const valores = {};
+            const errores = {};
 
-        for (const key of Object.keys(pre)) {
-          const id = `${modalId}_${key.replace(/\s+/g, '_')}`;
-          valores[key] = (modalEl.querySelector(`#${id}`).value || '').toString().trim();
-        }
-
-        errores["Nombre y Apellidos"] = onlyText(valores["Nombre y Apellidos"]) ? "" : "Solo texto permitido";
-        errores["NIF"] = nifValido(valores["NIF"]) ? "" : "Debe tener 8 números y 1 letra";
-        errores["Domicili"] = textoNumeros(valores["Domicili"]) ? "" : "Solo texto permitido";
-        errores["CP"] = cpValido(valores["CP"]) ? "" : "Debe tener 5 cifras";
-        errores["Población"] = onlyText(valores["Población"]) ? "" : "Solo texto permitido";
-        errores["Provincia"] = onlyText(valores["Provincia"]) ? "" : "Solo texto permitido";
-        errores["Nombre del curso"] = textoNumeros(valores["Nombre del curso"]) ? "" : "Solo texto permitido";
-        errores["Importe bruto"] = soloCifras(valores["Importe bruto"]) ? "" : "Solo cifras válidas";
-        errores["Importe neto"] = soloCifras(valores["Importe neto"]) ? "" : "Solo cifras válidas";
-        errores["IBAN"] = ibanValido(valores["IBAN"]) ? "" : "IBAN inválido";
-        errores["BIC"] = "";
-        errores["Email"] = emailValido(valores["Email"]) ? "" : "Email inválido";
-        errores["Teléfono"] = telefonoValido(valores["Teléfono"]) ? "" : "Debe tener 9 cifras";
-        errores["Grup"] = "";
-        errores["Nivell"] = "";
-        errores["Relacio_juridica"] = "";
-        errores["Dates_inici_final"] = "";
-
-        let hasError = false;
-        let errorMsg = "";
-
-        for (const key of Object.keys(pre)) {
-          const idErr = `${modalId}_${key.replace(/\s+/g, '_')}_err`;
-          const elErr = modalEl.querySelector(`#${idErr}`);
-
-          if (errores.hasOwnProperty(key) && errores[key]) {
-            hasError = true;
-            errorMsg += key + ": " + errores[key] + "\n";
-            if (elErr) {
-              elErr.textContent = errores[key];
-              elErr.classList.remove('d-none');
+            for (const key of Object.keys(pre)) {
+              const id = `${modalId}_${key.replace(/\s+/g, '_')}`;
+              valores[key] = (modalEl.querySelector(`#${id}`).value || '').toString().trim();
             }
-          } else if (elErr) {
-            elErr.textContent = '';
-            elErr.classList.add('d-none');
-          }
-        }
 
-        if (hasError) {
-          alert('Corrige los errores antes de continuar.\n' + errorMsg);
-          return;
-        }
+            errores["Nombre y Apellidos"] = onlyText(valores["Nombre y Apellidos"]) ? "" : "Solo texto permitido";
+            errores["NIF"] = nifValido(valores["NIF"]) ? "" : "Debe tener 8 números y 1 letra";
+            errores["Domicili"] = textoNumeros(valores["Domicili"]) ? "" : "Solo texto permitido";
+            errores["CP"] = cpValido(valores["CP"]) ? "" : "Debe tener 5 cifras";
+            errores["Población"] = onlyText(valores["Población"]) ? "" : "Solo texto permitido";
+            errores["Provincia"] = onlyText(valores["Provincia"]) ? "" : "Solo texto permitido";
+            errores["Nombre del curso"] = textoNumeros(valores["Nombre del curso"]) ? "" : "Solo texto permitido";
+            errores["Importe bruto"] = soloCifras(valores["Importe bruto"]) ? "" : "Solo cifras válidas";
+            errores["Importe neto"] = soloCifras(valores["Importe neto"]) ? "" : "Solo cifras válidas";
+            errores["IBAN"] = ibanValido(valores["IBAN"]) ? "" : "IBAN inválido";
+            errores["BIC"] = "";
+            errores["Email"] = emailValido(valores["Email"]) ? "" : "Email inválido";
+            errores["Teléfono"] = telefonoValido(valores["Teléfono"]) ? "" : "Debe tener 9 cifras";
+            errores["Grup"] = "";
+            errores["Nivell"] = "";
+            errores["Relacio_juridica"] = "";
+            errores["Dates_inici_final"] = "";
 
-        confirmed = true;
-        resultados.push({ persona: p, valores, errores });
-        bsModal.hide();
-      });
+            let hasError = false;
+            let errorMsg = "";
 
-      modalEl.addEventListener('hidden.bs.modal', () => {
-        bsModal.dispose();
-        modalEl.remove();
-        cleanupModalState();
+            for (const key of Object.keys(pre)) {
+              const idErr = `${modalId}_${key.replace(/\s+/g, '_')}_err`;
+              const elErr = modalEl.querySelector(`#${idErr}`);
 
-        if (!confirmed) {
-          console.log('Proceso cancelado o modal cerrado. Datos parciales:', resultados);
-          Object.values(buttons).forEach(b => b.disabled = false);
-          return;
-        }
-
-        if (i + 1 < personas.length) {
-          setTimeout(() => showModalFor(i + 1), 60);
-          return;
-        }
-
-        (async () => {
-          try {
-            const fd2 = new FormData();
-            fd2.append('file', selectedFile);
-            fd2.append('resultados', JSON.stringify(resultados));
-
-            const resp2 = await axios.post('/genera-minuta', fd2, {
-              headers: { 'Content-Type': 'multipart/form-data' },
-              responseType: 'blob'
-            });
-
-            const blobResp = resp2.data;
-            const contentType2 = (resp2.headers && resp2.headers['content-type']) || '';
-
-            if (contentType2.includes('application/json')) {
-              const text = await blobResp.text();
-              let data2;
-              try { data2 = JSON.parse(text); } catch { data2 = { message: text }; }
-
-              selectedFile = null;
-              fileInput.value = '';
-              fileNameEl.textContent = '';
-
-              alert(data2?.message || 'Operación completada');
-            } else {
-              const cd2 = (resp2.headers && (resp2.headers['content-disposition'] || resp2.headers['Content-Disposition'])) || '';
-              let filename2 = 'download';
-
-              const m2 = cd2.match(/filename\*?=(?:UTF-8'')?["']?([^;"']+)/i);
-              if (m2 && m2[1]) {
-                try { filename2 = decodeURIComponent(m2[1]); } catch { filename2 = m2[1]; }
-              } else if (selectedFile && selectedFile.name) {
-                const base2 = selectedFile.name.replace(/\.[^.]+$/, '');
-                filename2 = base2 + '_minuta';
-              }
-
-              const blobUrl2 = URL.createObjectURL(blobResp);
-              const a2 = document.createElement('a');
-              a2.href = blobUrl2;
-              a2.download = filename2;
-              document.body.appendChild(a2);
-              a2.click();
-              a2.remove();
-              URL.revokeObjectURL(blobUrl2);
-            }
-          } catch (err) {
-            let msg = err?.message || 'Error en la generación';
-            if (err?.response && err.response.data) {
-              try {
-                const errBlob = err.response.data;
-                if (typeof errBlob.text === 'function') {
-                  const txt = await errBlob.text();
-                  try { msg = JSON.parse(txt)?.message || txt; } catch { msg = txt; }
+              if (errores.hasOwnProperty(key) && errores[key]) {
+                hasError = true;
+                errorMsg += key + ": " + errores[key] + "\n";
+                if (elErr) {
+                  elErr.textContent = errores[key];
+                  elErr.classList.remove('d-none');
                 }
-              } catch (e) {}
+              } else if (elErr) {
+                elErr.textContent = '';
+                elErr.classList.add('d-none');
+              }
             }
-            alert(msg);
-          } finally {
-            Object.values(buttons).forEach(b => b.disabled = false);
-          }
-        })();
-      }, { once: true });
 
-      bsModal.show();
-    };
+            if (hasError) {
+              alert('Corrige los errores antes de continuar.\n' + errorMsg);
+              return;
+            }
 
-    const startFlow = () => {
-      cleanupModalState();
-      setTimeout(() => showModalFor(0), 60);
-    };
+            confirmed = true;
+            resultados.push({ persona: p, valores, errores });
+            bsModal.hide();
+          });
 
-    if (modalMainEl && modalMain) {
-      modalMainEl.addEventListener('hidden.bs.modal', startFlow, { once: true });
-      modalMain.hide();
-    } else {
-      startFlow();
-    }
+          modalEl.addEventListener('hidden.bs.modal', () => {
+            bsModal.dispose();
+            modalEl.remove();
+            cleanupModalState();
 
-  } catch (err) {
-    let msg = err?.message || 'Error en la subida';
-    if (err?.response && err.response.data) {
-      try {
-        const errBlob = err.response.data;
-        if (typeof errBlob.text === 'function') {
-          const txt = await errBlob.text();
-          try { msg = JSON.parse(txt)?.message || txt; } catch { msg = txt; }
+            if (!confirmed) {
+              console.log('Proceso cancelado o modal cerrado. Datos parciales:', resultados);
+              Object.values(buttons).forEach(b => b.disabled = false);
+              return;
+            }
+
+            if (i + 1 < personas.length) {
+              setTimeout(() => showModalFor(i + 1), 60);
+              return;
+            }
+
+            (async () => {
+              try {
+                const fd2 = new FormData();
+                fd2.append('file', selectedFile);
+                fd2.append('resultados', JSON.stringify(resultados));
+
+                const resp2 = await axios.post('/genera-minuta', fd2, {
+                  headers: { 'Content-Type': 'multipart/form-data' },
+                  responseType: 'blob'
+                });
+
+                const blobResp = resp2.data;
+                const contentType2 = (resp2.headers && resp2.headers['content-type']) || '';
+
+                if (contentType2.includes('application/json')) {
+                  const text = await blobResp.text();
+                  let data2;
+                  try { data2 = JSON.parse(text); } catch { data2 = { message: text }; }
+
+                  selectedFile = null;
+                  fileInput.value = '';
+                  fileNameEl.textContent = '';
+
+                  alert(data2?.message || 'Operación completada');
+                } else {
+                  const cd2 = (resp2.headers && (resp2.headers['content-disposition'] || resp2.headers['Content-Disposition'])) || '';
+                  let filename2 = 'download';
+
+                  const m2 = cd2.match(/filename\*?=(?:UTF-8'')?["']?([^;"']+)/i);
+                  if (m2 && m2[1]) {
+                    try { filename2 = decodeURIComponent(m2[1]); } catch { filename2 = m2[1]; }
+                  } else if (selectedFile && selectedFile.name) {
+                    const base2 = selectedFile.name.replace(/\.[^.]+$/, '');
+                    filename2 = base2 + '_minuta';
+                  }
+
+                  const blobUrl2 = URL.createObjectURL(blobResp);
+                  const a2 = document.createElement('a');
+                  a2.href = blobUrl2;
+                  a2.download = filename2;
+                  document.body.appendChild(a2);
+                  a2.click();
+                  a2.remove();
+                  URL.revokeObjectURL(blobUrl2);
+                }
+              } catch (err) {
+                let msg = err?.message || 'Error en la generación';
+                if (err?.response && err.response.data) {
+                  try {
+                    const errBlob = err.response.data;
+                    if (typeof errBlob.text === 'function') {
+                      const txt = await errBlob.text();
+                      try { msg = JSON.parse(txt)?.message || txt; } catch { msg = txt; }
+                    }
+                  } catch (e) { }
+                }
+                alert(msg);
+              } finally {
+                Object.values(buttons).forEach(b => b.disabled = false);
+              }
+            })();
+          }, { once: true });
+
+          bsModal.show();
+        };
+
+        const startFlow = () => {
+          cleanupModalState();
+          setTimeout(() => showModalFor(0), 60);
+        };
+
+        if (modalMainEl && modalMain) {
+          modalMainEl.addEventListener('hidden.bs.modal', startFlow, { once: true });
+          modalMain.hide();
+        } else {
+          startFlow();
         }
-      } catch (e) {}
+
+      } catch (err) {
+        let msg = err?.message || 'Error en la subida';
+        if (err?.response && err.response.data) {
+          try {
+            const errBlob = err.response.data;
+            if (typeof errBlob.text === 'function') {
+              const txt = await errBlob.text();
+              try { msg = JSON.parse(txt)?.message || txt; } catch { msg = txt; }
+            }
+          } catch (e) { }
+        }
+        alert(msg);
+      } finally {
+        Object.values(buttons).forEach(b => b.disabled = false);
+      }
     }
-    alert(msg);
-  } finally {
-    Object.values(buttons).forEach(b => b.disabled = false);
-  }
-}
 
     // Button clicks -> set action and upload
     buttons.designes.addEventListener('click', () => uploadFor('designes'));

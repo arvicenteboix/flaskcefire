@@ -1038,7 +1038,8 @@ def generar_skills_certifica(datos, identificativos, numero_a_letras=lambda x:st
             f"Que el personal docent que es relaciona a continuació ha format part com a personal col·laborador per "
             f"a formar part de l'equip docent que van ser anomenats per resolució de la Direcció General de "
             f"Formació Professional, per al curs «{codigo} - {curso}» "
-            f"realitzat de manera {modalidad_text} del {fechas}.\n"
+            f"realitzat de manera {modalidad_text} del {fechas}, i que ha realitzat de manera adequada "
+            f"i de conformitat als criteris pels quals varen ser designats\n"
         )
     else:
         modalidad_lower = modalidad.lower()
@@ -1063,7 +1064,8 @@ def generar_skills_certifica(datos, identificativos, numero_a_letras=lambda x:st
             f"Que el personal que es relaciona a continuació ha format part com a personal col·laborador per "
             f"a formar part de l'equip docent que van ser anomenats per resolució de la Direcció General de "
             f"Formació Professional, per al curs «{codigo} - {curso}» "
-            f"realitzat de manera {modalidad_text} del {fechas}.\n"
+            f"realitzat de manera {modalidad_text} del {fechas}, i que ha realitzat de manera adequada "
+            f"i de conformitat als criteris pels quals varen ser designats\n"
         )
 
     doc.add_paragraph(designa_text)

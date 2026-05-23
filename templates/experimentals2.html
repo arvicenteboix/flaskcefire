@@ -1,7 +1,6 @@
 <div class="row w-100 g-2">
   <div class="col">
-    <button type="button" class="btn btn-danger btn-lg w-100" data-bs-toggle="modal"
-      data-bs-target="#modalCDD">
+    <button type="button" class="btn btn-danger btn-lg w-100" data-bs-toggle="modal" data-bs-target="#modalCDD">
       <i class="fa-solid fa-laptop-medical" style="font-size:2.5rem;" aria-hidden="true"></i><br>Crea qüestionaris CDD
     </button>
   </div>
@@ -11,13 +10,13 @@
       <i class="fa-solid fa-people-group" style="font-size:2.5rem;" aria-hidden="true"></i><br>Usuaris
     </button>
   </div>
-<!--   <div class="col">
-    <button type="button" class="btn btn-light btn-lg w-100 border" aria-disabled="true" tabindex="-1"
-      data-bs-toggle="modal" data-bs-target="#recordatoriModal">
-      <i class="fa-solid fa-calendar" style="font-size:2.5rem;" aria-hidden="true"></i><br>Mail recordatori
+  <div class="col">
+    <button type="button" class="btn btn-success btn-lg w-100 border" style="--bs-btn-bg: #d46705;" aria-disabled="true"
+      tabindex="-1" data-bs-toggle="modal" data-bs-target="#GenCertsModal">
+      <i class="fa-solid fa-stamp" style="font-size:2.5rem;" aria-hidden="true"></i><br>Genera Certificats Signats
     </button>
   </div>
-  <div class="col">
+  <!--    <div class="col">
     <button type="button" class="btn btn-success btn-lg w-100 border" aria-disabled="true" tabindex="-1"
       data-bs-toggle="modal" data-bs-target="#modalguacamoleLabel">
       <i class="fa-solid fa-seedling" style="font-size:2.5rem;" aria-hidden="true"></i><br>Guacamole
@@ -30,7 +29,8 @@
     </button>
   </div>
 </div> -->
-<div>
-  {% include 'modales/modal_cdd.html' %}
-  {% include 'modales/usuaris_modal.html' %}
-</div>
+  <div>
+    {% include 'modales/modal_cdd.html' %}
+    {% include 'modales/usuaris_modal.html' %}
+    {% include 'signar.html' %}
+  </div>

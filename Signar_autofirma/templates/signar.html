@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signar PDF - Creador de Justificantes con AutoFirma</title>
+
+    <!-- Premium Fonts & CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <!-- Feather Icons for Clean Aesthetics -->
+    <script src="https://unpkg.com/feather-icons"></script>
+</head>
+
+<body>
+
+    <header>
+        <div class="header-container">
+            <h1 class="logo-glow">Signar PDF</h1>
+            <p class="logo-subtitle">Generación automatizada y firma en lote de justificantes de asistencia</p>
+        </div>
+    </header>
+
+    <main>
+        <div class="dashboard-card">
+            <!-- Step Tracker Progress Bar -->
+            <div class="step-tracker">
+                <div class="step-line-progress" id="stepProgressLine"></div>
+
+                <div class="step-node active" id="step1">
+                    <div class="step-circle">1</div>
+                    <span class="step-label">Subir Excel</span>
+                </div>
+
+                <div class="step-node" id="step2">
+                    <div class="step-circle">2</div>
+                    <span class="step-label">Firmar Justificantes</span>
+                </div>
+
+                <div class="step-node" id="step3">
+                    <div class="step-circle">3</div>
+                    <span class="step-label">Descargar ZIP</span>
+                </div>
+            </div>
+
+            <!-- Glowing Error Message Banner -->
+            <div class="error-alert" id="errorBanner">
+                <i data-feather="alert-circle" class="error-icon"></i>
+                <div class="error-content">
+                    <h4>Error en la operación</h4>
+                    <p id="errorMessage">Ha ocurrido un error inesperado al conectar con AutoFirma.</p>
+                </div>
+            </div>
+
+            <!-- STEP 1: Upload Panel (Supports Excel Template) -->
+            <div class="step-panel active" id="panelUpload">
+                <div class="template-download-card">
+                    <div class="template-info-wrapper">
+                        <div class="template-excel-icon">
+                            <i data-feather="file-text" style="width: 24px; height: 24px; stroke-width: 2.5px;"></i>
+                        </div>
+                        <div class="template-text-details">
+                            <h4>Descargar Plantilla Excel de Justificantes</h4>
+                            <p>Descarga la plantilla pre-formateada, rellena las filas de tus alumnos y súbela abajo.
+                            </p>
+                        </div>
+                    </div>
+                    <a href="/static/plantilla_justificantes.xlsx" class="template-download-btn"
+                        download="plantilla_justificantes.xlsx">
+                        <i data-feather="download" style="width: 16px; height: 16px;"></i> Descargar Plantilla (.xlsx)
+                    </a>
+                </div>
+
+                <div class="dropzone-container" id="dropzone">
+                    <input type="file" id="fileInput" accept=".xlsx, .xls" style="display: none;">
+                    <i data-feather="upload-cloud" class="dropzone-icon"></i>
+                    <h3>Arrastra y suelta tu plantilla de Excel aquí</h3>
+                    <p>o si lo prefieres, haz clic para explorar tus archivos locales (.xlsx)</p>
+                    <button class="dropzone-btn">Explorar Excel</button>
+                </div>
+
+                <div class="info-banner">
+                    <i data-feather="info" class="info-banner-icon"></i>
+                    <div>
+                        <strong>Generación y firma automatizada:</strong> El servidor leerá cada fila del Excel,
+                        generará un justificante PDF personalizado con el logotipo oficial y lanzará la firma secuencial
+                        con AutoFirma en lote.
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 2: Signing Progress & File List Queue Panel -->
+            <div class="step-panel" id="panelSigning">
+                <div class="status-loading-wrapper" style="padding-bottom: 5px;">
+                    <div class="pulse-spinner" style="margin-bottom: 20px;">
+                        <div class="double-bounce1"></div>
+                        <div class="double-bounce2"></div>
+                    </div>
+                    <h3 class="status-title" id="signingTitle">Generando justificantes PDF...</h3>
+                    <p class="status-desc" id="signingDesc" style="margin-bottom: 15px;">
+                        Por favor, mantente en esta pestaña. AutoFirma procesará tu lote de archivos secuencialmente.
+                        Confirma cada firma en la ventana de AutoFirma.
+                    </p>
+                    <div class="status-sub-desc" id="statusMessage" style="margin-bottom: 20px;">
+                        Procesando plantilla de Excel...
+                    </div>
+                </div>
+
+                <!-- Scrolling Queue list of generated batch files -->
+                <div class="file-list" id="queueList">
+                    <!-- Dynamic file items render here -->
+                </div>
+            </div>
+
+            <!-- STEP 3: Success Panel & In-Memory ZIP Download -->
+            <div class="step-panel" id="panelSuccess">
+                <div class="success-container">
+                    <div class="success-badge">
+                        <i data-feather="check"></i>
+                    </div>
+                    <h3 class="success-title">¡Justificantes Firmados con Éxito!</h3>
+                    <p class="success-desc">
+                        Todos los justificantes han sido generados, firmados criptográficamente (PAdES-BES) y
+                        empaquetados en un archivo comprimido.
+                    </p>
+
+                    <!-- Beautiful Single ZIP Download Card -->
+                    <div class="download-card" style="max-width: 440px; margin: 0 auto 35px auto;">
+                        <span class="download-card-icon" style="font-size: 2.8rem; margin-bottom: 8px;">📦</span>
+                        <span class="download-card-title">Descargar Justificantes (.ZIP)</span>
+                        <span class="download-card-desc" style="font-size: 0.8rem; margin-bottom: 15px;">
+                            Contiene todos los PDFs firmados listos para entregar. <strong>Privacidad absoluta:</strong>
+                            Al descargar este archivo, se eliminarán permanentemente todos los datos de este lote del
+                            servidor.
+                        </span>
+                        <a href="#" id="zipDownloadLink" class="btn-premium btn-primary"
+                            style="padding: 12px 24px; font-size: 0.95rem;">
+                            <i data-feather="download"></i> Descargar Justificantes ZIP
+                        </a>
+                    </div>
+
+                    <button class="btn-reset" id="btnRestart">Generar otro lote</button>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Signar PDF. CEFIRE FP València. Desarrollado con 💜 utilizando Flask y <a
+                href="https://firmaelectronica.gob.es/" target="_blank">AutoFirma</a>.</p>
+    </footer>
+
+    <!-- Official AutoFirma Script Integration -->
+    <script src="{{ url_for('static', filename='js/autoscript.js') }}"></script>
+
+    <script>
+        // Initialize Feather Icons
+        feather.replace();
+
+        // DOM Elements
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+
+        const panelUpload = document.getElementById('panelUpload');
+        const panelSigning = document.getElementById('panelSigning');
+        const panelSuccess = document.getElementById('panelSuccess');
+
+        const step1 = document.getElementById('step1');
+        const step2 = document.getElementById('step2');
+        const step3 = document.getElementById('step3');
+        const stepProgressLine = document.getElementById('stepProgressLine');
+
+        const errorBanner = document.getElementById('errorBanner');
+        const errorMessage = document.getElementById('errorMessage');
+
+        const signingTitle = document.getElementById('signingTitle');
+        const signingDesc = document.getElementById('signingDesc');
+        const statusMessage = document.getElementById('statusMessage');
+        const queueList = document.getElementById('queueList');
+
+        const zipDownloadLink = document.getElementById('zipDownloadLink');
+        const btnRestart = document.getElementById('btnRestart');
+
+        // State Queue Variables
+        let batchId = "";
+        let filesQueue = []; // Array of { id, file: { name }, status, pdf_base64, filename }
+
+        // UUID Generator for unique Batch Sessions
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        // Step Tracker Controller
+        function showPanel(step) {
+            panelUpload.classList.remove('active');
+            panelSigning.classList.remove('active');
+            panelSuccess.classList.remove('active');
+
+            step1.classList.remove('active', 'completed');
+            step2.classList.remove('active', 'completed');
+            step3.classList.remove('active', 'completed');
+
+            if (step === 1) {
+                panelUpload.classList.add('active');
+                step1.classList.add('active');
+                stepProgressLine.style.width = '0%';
+            } else if (step === 2) {
+                panelSigning.classList.add('active');
+                step1.classList.add('completed');
+                step2.classList.add('active');
+                stepProgressLine.style.width = '50%';
+            } else if (step === 3) {
+                panelSuccess.classList.add('active');
+                step1.classList.add('completed');
+                step2.classList.add('completed');
+                step3.classList.add('active');
+                stepProgressLine.style.width = '100%';
+            }
+        }
+
+        // Error Banner Controllers
+        function showError(msg) {
+            errorMessage.textContent = msg;
+            errorBanner.style.display = 'flex';
+            errorBanner.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Render the generated PDF file list queue
+        function renderQueue() {
+            queueList.innerHTML = "";
+            filesQueue.forEach((item, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = `file-item ${item.status === 'signing' ? 'active' : ''}`;
+                fileItem.id = `queue-item-${index}`;
+
+                // Status Badge rendering
+                let badgeClass = "badge-pending";
+                let badgeText = "Pendiente";
+                let badgeIcon = "clock";
+
+                if (item.status === 'signing') {
+                    badgeClass = "badge-signing";
+                    badgeText = "Firmando...";
+                    badgeIcon = "loader";
+                } else if (item.status === 'success') {
+                    badgeClass = "badge-success";
+                    badgeText = "Firmado";
+                    badgeIcon = "check-circle";
+                } else if (item.status === 'error') {
+                    badgeClass = "badge-error";
+                    badgeText = "Error";
+                    badgeIcon = "x-circle";
+                }
+
+                fileItem.innerHTML = `
+                    <div class="file-name-container">
+                        <i data-feather="file" class="file-item-icon"></i>
+                        <span class="file-name" title="${item.file.name}">${item.file.name}</span>
+                    </div>
+                    <div class="file-status">
+                        <span class="badge ${badgeClass}">
+                            <i data-feather="${badgeIcon}" style="width: 12px; height: 12px; stroke-width: 2.5px;"></i>
+                            ${badgeText}
+                        </span>
+                    </div>
+                `;
+                queueList.appendChild(fileItem);
+            });
+            // Re-render feather icons
+            feather.replace();
+        }
+
+        // Dropzone Event Listeners
+        dropzone.addEventListener('click', () => fileInput.click());
+
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('dragover');
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('dragover');
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
+
+            if (e.dataTransfer.files.length > 0) {
+                processExcelSelection(e.dataTransfer.files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                processExcelSelection(e.target.files[0]);
+            }
+        });
+
+        // Validate and upload the Excel template file
+        function processExcelSelection(file) {
+            errorBanner.style.display = 'none';
+            filesQueue = [];
+            batchId = generateUUID();
+
+            const isExcel = file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls');
+            if (!isExcel) {
+                showError('El archivo seleccionado no es una plantilla Excel. Por favor, sube archivos con extensión .xlsx o .xls.');
+                return;
+            }
+
+            if (file.size > 16 * 1024 * 1024) { // 16MB
+                showError('El archivo Excel excede el límite de tamaño permitido de 16 MB.');
+                return;
+            }
+
+            // Transition to signing screen panel
+            showPanel(2);
+            queueList.innerHTML = `
+                <div style="text-align: center; padding: 30px; color: var(--text-muted); font-size: 0.9rem;">
+                    <i data-feather="loader" style="animation: spin 2s infinite linear; margin-bottom: 10px; width: 24px; height: 24px;"></i>
+                    <p>Procesando plantilla Excel y generando archivos PDF...</p>
+                </div>
+            `;
+            feather.replace();
+
+            signingTitle.textContent = "Generando justificantes PDF...";
+            signingDesc.textContent = "El servidor está leyendo el Excel, validando las columnas y generando un PDF oficial para cada fila...";
+            statusMessage.textContent = "Subiendo y analizando Excel...";
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('batch_id', batchId);
+
+            fetch('/upload_excel', {
+                method: 'POST',
+                body: formData
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        // Populate filesQueue with the server-generated PDF information
+                        filesQueue = data.files.map((fileInfo, index) => ({
+                            id: index,
+                            file: { name: fileInfo.original_filename },
+                            status: 'pending',
+                            pdf_base64: fileInfo.pdf_base64,
+                            filename: fileInfo.filename
+                        }));
+
+                        renderQueue();
+
+                        signingTitle.textContent = "Conectando con AutoFirma...";
+                        statusMessage.textContent = "Estableciendo conexión WebSocket local...";
+
+                        // Launch a true single-prompt batch signature transaction!
+                        executeBatchSignature();
+                    } else {
+                        showError(data.error || "Error al procesar el archivo Excel.");
+                        showPanel(1);
+                    }
+                })
+                .catch(err => {
+                    console.error("Excel upload failed:", err);
+                    showError("No se pudo establecer conexión con el servidor Flask.");
+                    showPanel(1);
+                });
+        }
+
+        // Adaptive parser to extract the signed base64 for each file in filesQueue
+        function extractSignedBase64ForFile(resultObj, fileId, index) {
+            if (!resultObj) return null;
+
+            // Standard AutoFirma local JSON batch format: {"signs": [{"result": "...", "signature": "Base64..."}, ...]}
+            if (resultObj.signs && Array.isArray(resultObj.signs)) {
+                const sigItem = resultObj.signs[index];
+                if (sigItem) {
+                    if (sigItem.signature) return sigItem.signature;
+                    if (sigItem.result && sigItem.result !== 'DONE_AND_SAVED') return sigItem.result;
+                    if (typeof sigItem === 'string') return sigItem;
+                }
+            }
+
+            // Case 1: resultObj is a dictionary where key is fileId
+            if (resultObj[fileId]) {
+                const item = resultObj[fileId];
+                if (typeof item === 'string') return item;
+                if (item.result) return item.result;
+                if (item.signeddata) return item.signeddata;
+                if (item.data) return item.data;
+                if (item.signature) return item.signature;
+            }
+
+            // Case 2: resultObj is an array or object containing an array
+            let list = null;
+            if (Array.isArray(resultObj)) {
+                list = resultObj;
+            } else if (resultObj.singlesigns && Array.isArray(resultObj.singlesigns)) {
+                list = resultObj.singlesigns;
+            } else if (resultObj.results && Array.isArray(resultObj.results)) {
+                list = resultObj.results;
+            }
+
+            if (list) {
+                // Find the item with matching id
+                const found = list.find(item => item && (String(item.id) === String(fileId)));
+                if (found) {
+                    if (found.result) return found.result;
+                    if (found.signeddata) return found.signeddata;
+                    if (found.data) return found.data;
+                    if (found.signature) return found.signature;
+                    if (found.base64) return found.base64;
+                }
+
+                // Fail-safe Fallback: Match by index/order if exact id lookup failed
+                if (index !== undefined && index !== null && list[index]) {
+                    const fallbackItem = list[index];
+                    console.warn(`[Fail-safe Fallback] Matching by index ${index} for fileId ${fileId}`);
+                    if (typeof fallbackItem === 'string') return fallbackItem;
+                    if (fallbackItem.result) return fallbackItem.result;
+                    if (fallbackItem.signeddata) return fallbackItem.signeddata;
+                    if (fallbackItem.data) return fallbackItem.data;
+                    if (fallbackItem.signature) return fallbackItem.signature;
+                    if (fallbackItem.base64) return fallbackItem.base64;
+                }
+            }
+
+            return null;
+        }
+
+        // Executes single-popup local batch signing transaction in AutoFirma
+        function executeBatchSignature() {
+            signingTitle.textContent = "Iniciando firma por lotes...";
+            signingDesc.textContent = "Se ha lanzado la petición al cliente local AutoFirma. Confirma la firma seleccionando tu certificado y haciendo clic en 'Aceptar' en la ventana emergente única de AutoFirma.";
+            statusMessage.textContent = "Esperando confirmación del certificado...";
+
+            try {
+                // Connect browser to AutoFirma local WebSocket
+                MiniApplet.cargarAppAfirma();
+
+                // Configure local batch processing mode
+                MiniApplet.setLocalBatchProcess(true);
+
+                // Config PAdES visible watermark parameters (Centered in the lower half of the last page)
+                const extraParams = "signatureMode=implicit\n" +
+                    "signReason=Justificante firmado digitalmente\n" +
+                    "padesBasicFormat=PAdES-BES\n" +
+                    "signaturePage=-1\n" +
+                    "signaturePositionOnPageLowerLeftX=97\n" +
+                    "signaturePositionOnPageLowerLeftY=80\n" +
+                    "signaturePositionOnPageUpperRightX=497\n" +
+                    "signaturePositionOnPageUpperRightY=160\n" +
+                    "layer2Text=Firmado por $$SUBJECTCN$$, el $$SIGNDATE=d$$ de $$SIGNDATE=MMMM$$ de $$SIGNDATE=yyyy$$ a las $$SIGNDATE=HH:mm$$ por un certificado emitido por $$ISSUERCN$$\n" +
+                    "layer2FontSize=9\n" +
+                    "layer2FontStyle=0";
+
+                // Initialize batch with standard global configs
+                MiniApplet.createBatch("SHA256withRSA", "PAdES", "SIGN", extraParams);
+
+                // Add every generated PDF file to the batch configuration
+                filesQueue.forEach(item => {
+                    item.status = 'signing';
+                    MiniApplet.addDocumentToBatch(String(item.id), item.pdf_base64, null, null, null);
+                });
+                renderQueue();
+
+                // Fire transactional signature popup!
+                MiniApplet.signBatchProcess(
+                    true, // stopOnError
+                    null, // pre-signer url (null for local batch)
+                    null, // post-signer url (null for local batch)
+                    null, // cert filters
+                    // Success callback
+                    (result, certificate) => {
+                        handleBatchSuccess(result);
+                    },
+                    // Error callback
+                    (errorType, errorMessageText) => {
+                        handleBatchError(errorType, errorMessageText);
+                    }
+                );
+
+            } catch (e) {
+                console.error("Critical signature error in batch generation:", e);
+                showError("Error crítico al comunicar con AutoFirma. Asegúrate de tener la aplicación instalada.");
+                showPanel(1);
+            }
+        }
+
+        // Process successful batch signatures
+        function handleBatchSuccess(result) {
+            console.log("AutoFirma Batch Signature Success. Result:", result);
+            signingTitle.textContent = "Lote firmado. Guardando...";
+            signingDesc.textContent = "Firma masiva completada. Transfiriendo documentos firmados al servidor en paralelo...";
+            statusMessage.textContent = "Almacenando justificantes en servidor...";
+
+            // Parallel save POST requests to Flask backend for absolute performance
+            const savePromises = filesQueue.map((item, idx) => {
+                const signedB64 = extractSignedBase64ForFile(result, String(item.id), idx) ||
+                    extractSignedBase64ForFile(result, item.filename, idx);
+                if (!signedB64) {
+                    item.status = 'error';
+                    const resType = typeof result;
+                    const resKeys = (result && typeof result === 'object') ? Object.keys(result).join(', ') : 'N/A';
+                    const resLength = (result && Array.isArray(result)) ? result.length : 'N/A';
+                    let preview = '';
+                    try {
+                        preview = JSON.stringify(result).substring(0, 400);
+                    } catch (e) {
+                        preview = String(result).substring(0, 400);
+                    }
+                    return Promise.reject(new Error(`No se encontró el resultado de firma para: ${item.file.name}. (Tipo: ${resType}, Claves: [${resKeys}], Tamaño: ${resLength}, Preview: ${preview})`));
+                }
+
+                return fetch('/save_signed', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        filename: item.filename,
+                        batch_id: batchId,
+                        signed_base64: signedB64
+                    })
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            item.status = 'success';
+                            return item;
+                        } else {
+                            item.status = 'error';
+                            throw new Error(data.error || `Error al guardar: ${item.file.name}`);
+                        }
+                    });
+            });
+
+            Promise.all(savePromises)
+                .then(results => {
+                    renderQueue();
+                    signingTitle.textContent = "Lote de justificantes guardado.";
+                    statusMessage.textContent = "Justificantes listos para descarga.";
+
+                    // Configure ZIP download link
+                    zipDownloadLink.href = `/download_batch/${batchId}`;
+
+                    // Navigate to Step 3 success panel
+                    showPanel(3);
+                })
+                .catch(error => {
+                    console.error("Batch save error:", error);
+                    renderQueue();
+                    showError(`Error al guardar los justificantes firmados: ${error.message}`);
+                    showPanel(1);
+                });
+        }
+
+        // Handle batch signing failures or cancellations
+        function handleBatchError(errorType, errorMessageText) {
+            console.warn("AutoFirma batch error returned:", errorType, errorMessageText);
+
+            // Set all items in the queue to error state
+            filesQueue.forEach(item => {
+                item.status = 'error';
+            });
+            renderQueue();
+
+            let userMsg = "Ha ocurrido un error en la firma por lotes.";
+            if (errorType === "cancelled" || errorMessageText.includes("user") || errorMessageText.includes("cancel")) {
+                userMsg = "La operación de firma por lotes fue cancelada por el usuario.";
+            } else if (errorMessageText.includes("connection") || errorMessageText.includes("connect")) {
+                userMsg = "No se pudo conectar con AutoFirma. Comprueba que la aplicación de escritorio está iniciada.";
+            } else if (errorMessageText) {
+                userMsg = `Detalles de AutoFirma: ${errorMessageText}`;
+            }
+
+            showError(userMsg);
+            showPanel(1);
+        }
+
+        // Restart Flow
+        btnRestart.addEventListener('click', () => {
+            fileInput.value = "";
+            filesQueue = [];
+            batchId = "";
+            hideError();
+            showPanel(1);
+        });
+
+        // Trigger automatic ZIP download when user clicks the button
+        zipDownloadLink.addEventListener('click', (e) => {
+            setTimeout(() => {
+                zipDownloadLink.classList.add('btn-reset');
+                zipDownloadLink.classList.remove('btn-primary');
+                zipDownloadLink.style.pointerEvents = 'none';
+                zipDownloadLink.innerHTML = '<i data-feather="lock"></i> Descargado (Lote Purgado)';
+                feather.replace();
+                statusMessage.textContent = "Lote cerrado y purgado del servidor.";
+            }, 1500);
+        });
+
+    </script>
+</body>
+
+</html>

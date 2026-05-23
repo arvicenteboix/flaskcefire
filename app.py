@@ -1,6 +1,7 @@
 from werkzeug.security import check_password_hash
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
 from werkzeug.security import generate_password_hash
+from functools import wraps
 import sqlite3
 import os
 import zipfile, tempfile, os
@@ -14,6 +15,8 @@ import CDD.rellenar_cuestionario_cdd as cdd
 import time
 import pandas as pd
 from io import BytesIO
+import shutil
+from Signar_autofirma.signar import *  
 
 import eventos.eventos as eventos
 
@@ -25,6 +28,23 @@ import uuid
 from datetime import datetime
 
 app = Flask(__name__)
+
+# Directory Configurations
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
+SIGNED_FOLDER = os.path.join(BASE_DIR, 'signed_files')
+STATIC_FOLDER = os.path.join(BASE_DIR, 'static')
+
+# Ensure directories exist
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(SIGNED_FOLDER, exist_ok=True)
+os.makedirs(STATIC_FOLDER, exist_ok=True)
+
+# App Configuration
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['SIGNED_FOLDER'] = SIGNED_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024  # Max size limit: 32 MB
+
 
 # Usar SQLite en lugar de MySQL
 db_path = os.path.join(os.path.dirname(__file__), "miapp.db")
@@ -56,6 +76,97 @@ def enviar_arxiu(buffer, save_path):
         download_name=save_path,  # Ej: 'mi_documento.docx'
         mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     )
+
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get("logged_in"):
+            return redirect(url_for("login"))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get("logged_in"):
+            return redirect(url_for("login"))
+        current_user = conn.cursor().execute(
+            "SELECT username FROM users WHERE id = ?",
+            (session.get("user_id"),)
+        ).fetchone()
+        if not current_user or current_user["username"] not in ["alfredo", "alviboi", "gmunoz"]:
+            return jsonify({"error": "No estás autorizado"}), 403
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+def enviar_archivos_o_zip(result, default_zip_name):
+    if result is None:
+        return jsonify({"error": "Procesamiento falló: on_process devolvió None"}), 400
+    files = list(result)
+    if not files:
+        return jsonify({"error": "No se generaron archivos"}), 400
+    if len(files) == 1:
+        buffer, path = files[0]
+        return send_file(buffer, as_attachment=True, download_name=path)
+
+    tmp_zip = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
+    tmp_zip.close()
+    try:
+        with zipfile.ZipFile(tmp_zip.name, "w", zipfile.ZIP_DEFLATED) as zf:
+            for buffer, path in files:
+                if isinstance(buffer, str) and os.path.isfile(buffer):
+                    zf.write(buffer, arcname=path)
+                elif isinstance(buffer, (bytes, bytearray)):
+                    zf.writestr(path, buffer)
+                elif hasattr(buffer, "read"):
+                    try:
+                        buffer.seek(0)
+                    except Exception:
+                        pass
+                    zf.writestr(path, buffer.read())
+                else:
+                    zf.writestr(path, bytes(buffer))
+        return send_file(tmp_zip.name, as_attachment=True, download_name=default_zip_name)
+    except Exception as e:
+        return jsonify({"error": f"Error al generar ZIP: {e}"}), 500
+
+
+def generar_zip_de_carpeta(ruta_crea_carpeta, codigo, asesor):
+    root_folder = f"{codigo}_{asesor}"
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
+    tmp.close()
+    try:
+        with zipfile.ZipFile(tmp.name, "w", zipfile.ZIP_DEFLATED) as zf:
+            for archivo in os.listdir(ruta_crea_carpeta):
+                ruta_completa = os.path.join(ruta_crea_carpeta, archivo)
+                if os.path.isfile(ruta_completa):
+                    nuevo_nombre = f"{codigo}_{archivo}"
+                    arcname = os.path.join(root_folder, nuevo_nombre)
+                    zf.write(ruta_completa, arcname=arcname)
+                else:
+                    if os.path.isdir(ruta_completa):
+                        if archivo.endswith("-Tec"):
+                            new_dir = f"{codigo}-Tec"
+                            for root, _, files in os.walk(ruta_completa):
+                                for fname in files:
+                                    full = os.path.join(root, fname)
+                                    nuevo_nombre = f"{codigo}_{os.path.basename(fname)}"
+                                    arcname = os.path.join(root_folder, new_dir, nuevo_nombre)
+                                    zf.write(full, arcname=arcname)
+                        else:
+                            base = os.path.abspath(os.path.join(ruta_crea_carpeta))
+                            for root, _, files in os.walk(ruta_completa):
+                                for fname in files:
+                                    full = os.path.join(root, fname)
+                                    rel = os.path.relpath(full, base)
+                                    arcname = os.path.join(root_folder, rel)
+                                    zf.write(full, arcname=arcname)
+        return send_file(tmp.name, as_attachment=True, download_name=f"{root_folder}.zip")
+    except Exception as e:
+        return jsonify({"error": f"Error al generar ZIP de carpeta: {e}"}), 500
 
 
 
@@ -97,9 +208,8 @@ def login():
 
 
 @app.route("/privado")
+@login_required
 def privado():
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
     return render_template("privado.html", username=session.get("username"))
 
 
@@ -164,9 +274,8 @@ def upload_excel():
     return redirect(url_for("privado"))
 
 @app.route("/create_folder", methods=["POST"])
+@login_required
 def create_folder():
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
     print("create_folder called")
     if request.method == "POST":
         # Aquí manejarías la creación de la carpeta
@@ -176,67 +285,14 @@ def create_folder():
         
         print(f"Codigo: {codigo}, Asesor: {asesor}")
         if codigo and asesor:
-            repo_dir = os.path.dirname(__file__)
-            root_folder = f"{codigo}_{asesor}"
-
-            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
-            print(f"Creating zip file at: {tmp.name}")
-            tmp.close()
-            try:
-                with zipfile.ZipFile(tmp.name, "w", zipfile.ZIP_DEFLATED) as zf:
-                    # Aquí agregarías los archivos a la carpeta zip
-                    # Por ejemplo, creando archivos de texto de ejemplo
-                    for archivo in os.listdir("./crea_carpeta"):
-                        ruta_completa = os.path.join("./crea_carpeta", archivo)
-                        if os.path.isfile(ruta_completa):
-                            nuevo_nombre = f"{codigo}_{archivo}"  # Prefijo + nombre original
-                            arcname = os.path.join(root_folder, nuevo_nombre)
-                            zf.write(ruta_completa, arcname=arcname)
-                        else:
-                            # si es un directorio, manejar su contenido
-                            if os.path.isdir(ruta_completa):
-                                # Carpeta que termina en "-Tec": renombrar carpeta a "{codigo}-Tec"
-                                # y prefixar todos los archivos con "codigo_"
-                                if archivo.endswith("-Tec"):
-                                    new_dir = f"{codigo}-Tec"
-                                    for root, _, files in os.walk(ruta_completa):
-                                        for fname in files:
-                                            full = os.path.join(root, fname)
-                                            # usar solo el nombre del archivo (sin subcarpetas internas) para el prefijo
-                                            nuevo_nombre = f"{codigo}_{os.path.basename(fname)}"
-                                            arcname = os.path.join(root_folder, new_dir, nuevo_nombre)
-                                            zf.write(full, arcname=arcname)
-                                else:
-                                    # Otras carpetas: conservar estructura dentro de root_folder
-                                    base = os.path.abspath(os.path.join("./crea_carpeta"))
-                                    for root, _, files in os.walk(ruta_completa):
-                                        for fname in files:
-                                            full = os.path.join(root, fname)
-                                            rel = os.path.relpath(full, base)  # incluye el nombre de la carpeta original
-                                            arcname = os.path.join(root_folder, rel)
-                                            zf.write(full, arcname=arcname)
-
-                    #zf.writestr(f"{root_folder}/info.txt", f"Código: {codigo}\nAsesor: {asesor}\n")
-                    #zf.writestr(f"{root_folder}/readme.txt", "Esta es una carpeta creada automáticamente.\n")
-                    print(f"Zip file {tmp.name} created successfully.")              
-                try:
-                    return send_file(tmp.name, as_attachment=True, download_name=f"{root_folder}.zip")
-                except TypeError:
-                    return send_file(tmp.name, as_attachment=True, attachment_filename=f"{root_folder}.zip")
-            finally:
-                # don't remove immediately to allow send_file to read it; optional cleanup could be added later
-                pass
-            # Lógica para crear la carpeta
-            
-            pass
+            return generar_zip_de_carpeta("./crea_carpeta", codigo, asesor)
     return redirect(url_for("privado"))
 
 
 
 @app.route("/create_folder_sdgfp", methods=["POST"])
+@login_required
 def create_folder_sdgfp():
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
     print("create_folder_sdgfp called")
     if request.method == "POST":
         # Aquí manejarías la creación de la carpeta
@@ -246,73 +302,18 @@ def create_folder_sdgfp():
         
         print(f"Codigo: {codigo}, Asesor: {asesor}")
         if codigo and asesor:
-            repo_dir = os.path.dirname(__file__)
-            root_folder = f"{codigo}_{asesor}"
-
-            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
-            print(f"Creating zip file at: {tmp.name}")
-            tmp.close()
-            try:
-                with zipfile.ZipFile(tmp.name, "w", zipfile.ZIP_DEFLATED) as zf:
-                    # Aquí agregarías los archivos a la carpeta zip
-                    # Por ejemplo, creando archivos de texto de ejemplo
-                    for archivo in os.listdir("./crea_carpeta_sdgfp"):
-                        ruta_completa = os.path.join("./crea_carpeta_sdgfp", archivo)
-                        if os.path.isfile(ruta_completa):
-                            nuevo_nombre = f"{codigo}_{archivo}"  # Prefijo + nombre original
-                            arcname = os.path.join(root_folder, nuevo_nombre)
-                            zf.write(ruta_completa, arcname=arcname)
-                        else:
-                            # si es un directorio, manejar su contenido
-                            if os.path.isdir(ruta_completa):
-                                # Carpeta que termina en "-Tec": renombrar carpeta a "{codigo}-Tec"
-                                # y prefixar todos los archivos con "codigo_"
-                                if archivo.endswith("-Tec"):
-                                    new_dir = f"{codigo}-Tec"
-                                    for root, _, files in os.walk(ruta_completa):
-                                        for fname in files:
-                                            full = os.path.join(root, fname)
-                                            # usar solo el nombre del archivo (sin subcarpetas internas) para el prefijo
-                                            nuevo_nombre = f"{codigo}_{os.path.basename(fname)}"
-                                            arcname = os.path.join(root_folder, new_dir, nuevo_nombre)
-                                            zf.write(full, arcname=arcname)
-                                else:
-                                    # Otras carpetas: conservar estructura dentro de root_folder
-                                    base = os.path.abspath(os.path.join("./crea_carpeta_sdgfp"))
-                                    for root, _, files in os.walk(ruta_completa):
-                                        for fname in files:
-                                            full = os.path.join(root, fname)
-                                            rel = os.path.relpath(full, base)  # incluye el nombre de la carpeta original
-                                            arcname = os.path.join(root_folder, rel)
-                                            zf.write(full, arcname=arcname)
-
-                    #zf.writestr(f"{root_folder}/info.txt", f"Código: {codigo}\nAsesor: {asesor}\n")
-                    #zf.writestr(f"{root_folder}/readme.txt", "Esta es una carpeta creada automáticamente.\n")
-                    print(f"Zip file {tmp.name} created successfully.")              
-                try:
-                    return send_file(tmp.name, as_attachment=True, download_name=f"{root_folder}.zip")
-                except TypeError:
-                    return send_file(tmp.name, as_attachment=True, attachment_filename=f"{root_folder}.zip")
-            finally:
-                # don't remove immediately to allow send_file to read it; optional cleanup could be added later
-                pass
-            # Lógica para crear la carpeta
-            
-            pass
+            return generar_zip_de_carpeta("./crea_carpeta_sdgfp", codigo, asesor)
     return redirect(url_for("privado"))
 
 
 @app.route("/excel_cdd", methods=["GET"])
+@login_required
 def excel_cdd():
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
     return send_file("CDD/Plantilla_Cuestionario_CDD.xlsx", as_attachment=True, download_name="Plantilla_Cuestionario_CDD.xlsx")
 
 @app.route("/cdd", methods=["GET", "POST"])
+@login_required
 def cdd_view():
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
-    
     if request.method == "POST":
         print("POST request received at /cdd")
         archivo_excel = request.files.get("file")
@@ -362,212 +363,58 @@ def cdd_view():
                             time.sleep(0.25)
     
     return render_template("cdd.html")
-""" 
 
-@app.route("/cdd")
-def cdd_view():
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
-     # Lógica para rellenar el cuestionario
-        # Aquí puedes llamar a la función rellenar_cuestionario con los datos necesarios
-        # Por ejemplo:
 
-    archivo = request.files.get("file")
-
-    cdd.crear_zip_cuestionarios_directo(archivo)
-
-    try:
-        return send_file("cdd.zip", as_attachment=True, download_name="cuestionarios_cdd.zip")
-    finally:
-        if os.path.exists("cdd.zip"):
-            for _ in range(20):
-                try:
-                    os.remove("cdd.zip")
-                    break
-                except PermissionError:
-                    time.sleep(0.25)
-
- """
 @app.route("/designes", methods=["POST"])
+@login_required
 def designes():
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
     if request.method == "POST":
         archivo = request.files.get("file")
         if archivo:
             json_data = crea_designa.process_excel(archivo)
             datos_identificativos = crea_designa.extraer_datos_identificativos(archivo)
             print("Datos identificativos:", datos_identificativos)
-            # buffer, path = crea_designa.on_process(json_data, datos_identificativos, tipo="des")
 
             result = crea_designa.on_process(json_data, datos_identificativos, tipo="des")
             print("Result from on_process:", result)
-            
-            if result is None:
-                return jsonify({"error": "Procesamiento falló: on_process devolvió None"}), 400
-            # Manejar múltiples archivos devueltos por on_process: crear un ZIP y devolverlo
-            files = list(result)
-            if len(files) == 1:
-                buffer, path = files[0]
-                return send_file(buffer, as_attachment=True, download_name=path)
-
-            tmp_zip = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
-            tmp_zip.close()
-            try:
-                with zipfile.ZipFile(tmp_zip.name, "w", zipfile.ZIP_DEFLATED) as zf:
-                    for buffer, path in files:
-                        # si buffer es una ruta en disco
-                        if isinstance(buffer, str) and os.path.isfile(buffer):
-                            zf.write(buffer, arcname=path)
-                        # si buffer es bytes/bytearray
-                        elif isinstance(buffer, (bytes, bytearray)):
-                            zf.writestr(path, buffer)
-                        # si buffer es file-like
-                        elif hasattr(buffer, "read"):
-                            try:
-                                buffer.seek(0)
-                            except Exception:
-                                pass
-                            zf.writestr(path, buffer.read())
-                        else:
-                            # intentar serializar a bytes como fallback
-                            zf.writestr(path, bytes(buffer))
-                try:
-                    return send_file(tmp_zip.name, as_attachment=True, download_name="designas.zip")
-                except TypeError:
-                    return send_file(tmp_zip.name, as_attachment=True, attachment_filename="designas.zip")
-            finally:
-                # opcional: limpiar el zip tras enviarlo si se desea (no lo hacemos inmediatamente para permitir send_file)
-                pass
-            # return enviar_arxiu(buffer, path)
-            # enviar_arxiu(buffer, path)
+            return enviar_archivos_o_zip(result, "designas.zip")
     return redirect(url_for("privado"))
 
-# DESIGNES SDGFP 
 
 @app.route("/designessdgfp", methods=["POST"])
+@login_required
 def designessdgfp():
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
     if request.method == "POST":
         archivo = request.files.get("file")
         campana = request.form.get("campana", "")
         if archivo:
             json_data = crea_designa.process_excel(archivo)
             datos_identificativos = crea_designa.extraer_datos_identificativos(archivo)
-            # print("Datos identificativos:", datos_identificativos)
-            # buffer, path = crea_designa.on_process(json_data, datos_identificativos, tipo="des")
 
             result = crea_designa.on_process(json_data, datos_identificativos, tipo="dessdgfp", campana=campana)
             print("Result from on_process:", result)
-            
-            if result is None:
-                return jsonify({"error": "Procesamiento falló: on_process devolvió None"}), 400
-            # Manejar múltiples archivos devueltos por on_process: crear un ZIP y devolverlo
-            files = list(result)
-            if len(files) == 1:
-                buffer, path = files[0]
-                return send_file(buffer, as_attachment=True, download_name=path)
-
-            tmp_zip = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
-            tmp_zip.close()
-            try:
-                with zipfile.ZipFile(tmp_zip.name, "w", zipfile.ZIP_DEFLATED) as zf:
-                    for buffer, path in files:
-                        # si buffer es una ruta en disco
-                        if isinstance(buffer, str) and os.path.isfile(buffer):
-                            zf.write(buffer, arcname=path)
-                        # si buffer es bytes/bytearray
-                        elif isinstance(buffer, (bytes, bytearray)):
-                            zf.writestr(path, buffer)
-                        # si buffer es file-like
-                        elif hasattr(buffer, "read"):
-                            try:
-                                buffer.seek(0)
-                            except Exception:
-                                pass
-                            zf.writestr(path, buffer.read())
-                        else:
-                            # intentar serializar a bytes como fallback
-                            zf.writestr(path, bytes(buffer))
-                try:
-                    return send_file(tmp_zip.name, as_attachment=True, download_name="designas.zip")
-                except TypeError:
-                    return send_file(tmp_zip.name, as_attachment=True, attachment_filename="designas.zip")
-            finally:
-                # opcional: limpiar el zip tras enviarlo si se desea (no lo hacemos inmediatamente para permitir send_file)
-                pass
-            # return enviar_arxiu(buffer, path)
-            # enviar_arxiu(buffer, path)
+            return enviar_archivos_o_zip(result, "designas.zip")
     return redirect(url_for("privado"))
 
 
-
-
-# CERTIFICA
-
 @app.route("/certifica", methods=["POST"])
+@login_required
 def certifica():
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
     if request.method == "POST":
         archivo = request.files.get("file")
         if archivo:
             json_data = crea_designa.process_excel(archivo)
             datos_identificativos = crea_designa.extraer_datos_identificativos(archivo)
-            # print("Datos identificativos:", datos_identificativos)
-            # buffer, path = crea_designa.on_process(json_data, datos_identificativos, tipo="des")
 
             result = crea_designa.on_process(json_data, datos_identificativos, tipo="cer")
             print("Result from on_process:", result)
-            
-            if result is None:
-                return jsonify({"error": "Procesamiento falló: on_process devolvió None"}), 400
-            files = list(result)
-            if len(files) == 1:
-                buffer, path = files[0]
-                return send_file(buffer, as_attachment=True, download_name=path)
-
-            tmp_zip = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
-            tmp_zip.close()
-            try:
-                with zipfile.ZipFile(tmp_zip.name, "w", zipfile.ZIP_DEFLATED) as zf:
-                    for buffer, path in files:
-                        # si buffer es una ruta en disco
-                        if isinstance(buffer, str) and os.path.isfile(buffer):
-                            zf.write(buffer, arcname=path)
-                        # si buffer es bytes/bytearray
-                        elif isinstance(buffer, (bytes, bytearray)):
-                            zf.writestr(path, buffer)
-                        # si buffer es file-like
-                        elif hasattr(buffer, "read"):
-                            try:
-                                buffer.seek(0)
-                            except Exception:
-                                pass
-                            zf.writestr(path, buffer.read())
-                        else:
-                            # intentar serializar a bytes como fallback
-                            zf.writestr(path, bytes(buffer))
-                try:
-                    return send_file(tmp_zip.name, as_attachment=True, download_name="certificas.zip")
-                except TypeError:
-                    return send_file(tmp_zip.name, as_attachment=True, attachment_filename="certificas.zip")
-            finally:
-                # opcional: limpiar el zip tras enviarlo si se desea (no lo hacemos inmediatamente para permitir send_file)
-                pass
-            # return enviar_arxiu(buffer, path)
-            # enviar_arxiu(buffer, path)
-            # return enviar_arxiu(buffer, path)
-            # enviar_arxiu(buffer, path)
+            return enviar_archivos_o_zip(result, "certificas.zip")
     return redirect(url_for("privado"))
 
-# CERTIFICA SDGFP
 
 @app.route("/certificasdgfp", methods=["POST"])
+@login_required
 def certificasdgfp():
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
     if request.method == "POST":
         archivo = request.files.get("file")
         campana = request.form.get("campana", "")
@@ -577,73 +424,29 @@ def certificasdgfp():
 
             result = crea_designa.on_process(json_data, datos_identificativos, tipo="cersdgfp", campana=campana)
             print("Result from on_process:", result)
-            
-            if result is None:
-                return jsonify({"error": "Procesamiento falló: on_process devolvió None"}), 400
-            files = list(result)
-            if len(files) == 1:
-                buffer, path = files[0]
-                return send_file(buffer, as_attachment=True, download_name=path)
-
-            tmp_zip = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
-            tmp_zip.close()
-            try:
-                with zipfile.ZipFile(tmp_zip.name, "w", zipfile.ZIP_DEFLATED) as zf:
-                    for buffer, path in files:
-                        # si buffer es una ruta en disco
-                        if isinstance(buffer, str) and os.path.isfile(buffer):
-                            zf.write(buffer, arcname=path)
-                        # si buffer es bytes/bytearray
-                        elif isinstance(buffer, (bytes, bytearray)):
-                            zf.writestr(path, buffer)
-                        # si buffer es file-like
-                        elif hasattr(buffer, "read"):
-                            try:
-                                buffer.seek(0)
-                            except Exception:
-                                pass
-                            zf.writestr(path, buffer.read())
-                        else:
-                            # intentar serializar a bytes como fallback
-                            zf.writestr(path, bytes(buffer))
-                try:
-                    return send_file(tmp_zip.name, as_attachment=True, download_name="certificas.zip")
-                except TypeError:
-                    return send_file(tmp_zip.name, as_attachment=True, attachment_filename="certificas.zip")
-            finally:
-                pass
+            return enviar_archivos_o_zip(result, "certificas.zip")
     return redirect(url_for("privado"))
 
 
-
-
 @app.route("/resolc-dgfp", methods=["POST"])
+@login_required
 def resolc_dgfp():
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
     if request.method == "POST":
         archivo = request.files.get("file")
         if archivo:
             json_data = crea_designa.process_excel(archivo)
             personas = []
             for persona in json_data:
-
-                # print("Procesando persona para resolución DGFP:", persona)
                 if persona['Movimientos'][0]['JURÍDICO'] != "Empresa/autónomo":
                     personas.append(persona['Nombre'])
                 
             return app.response_class(json.dumps({"personas": personas}, ensure_ascii=False), mimetype='application/json')
-
-        
-
-            # return enviar_arxiu(buffer, path)
-            # enviar_arxiu(buffer, path)
     return redirect(url_for("privado"))
 
+
 @app.route("/genera-resolc", methods=["POST"])
+@login_required
 def genera_resolc():
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
     if request.method == "POST":
         archivo = request.files.get("file")
 
@@ -661,52 +464,13 @@ def genera_resolc():
                     resultados = [r.strip() for r in resultados.split(",") if r.strip()]
             print(resultados)
             result = crea_designa.on_process(json_data, datos_identificativos, tipo="resolc", resultados=resultados)
-            if result is None:
-                return jsonify({"error": "Procesamiento falló: on_process devolvió None"}), 400
-            # { p, fecha, centro, cargo }
-            files = list(result)
-            if len(files) == 1:
-                buffer, path = files[0]
-                return send_file(buffer, as_attachment=True, download_name=path)
-
-            tmp_zip = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
-            tmp_zip.close()
-            try:
-                with zipfile.ZipFile(tmp_zip.name, "w", zipfile.ZIP_DEFLATED) as zf:
-                    for buffer, path in files:
-                        # si buffer es una ruta en disco
-                        if isinstance(buffer, str) and os.path.isfile(buffer):
-                            zf.write(buffer, arcname=path)
-                        # si buffer es bytes/bytearray
-                        elif isinstance(buffer, (bytes, bytearray)):
-                            zf.writestr(path, buffer)
-                        # si buffer es file-like
-                        elif hasattr(buffer, "read"):
-                            try:
-                                buffer.seek(0)
-                            except Exception:
-                                pass
-                            zf.writestr(path, buffer.read())
-                        else:
-                            # intentar serializar a bytes como fallback
-                            zf.writestr(path, bytes(buffer))
-                try:
-                    return send_file(tmp_zip.name, as_attachment=True, download_name="resolc.zip")
-                except TypeError:
-                    return send_file(tmp_zip.name, as_attachment=True, attachment_filename="resolc.zip")
-            finally:
-                # opcional: limpiar el zip tras enviarlo si se desea (no lo hacemos inmediatamente para permitir send_file)
-                pass
-
-            # return enviar_arxiu(buffer, path)
-            # enviar_arxiu(buffer, path)
+            return enviar_archivos_o_zip(result, "resolc.zip")
     return redirect(url_for("privado"))
 
 
 @app.route("/minuta-dgfp", methods=["POST"])
+@login_required
 def minuta_dgfp():
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
     if request.method == "POST":
         archivo = request.files.get("file")
         if archivo:
@@ -714,27 +478,17 @@ def minuta_dgfp():
             identificativos = crea_designa.extraer_datos_identificativos(archivo)
             
             personas = []
-            # personas se almacenará como lista de diccionarios y se devolverá como JSON usando jsonify
             for persona in json_data:
-
-                # print("Procesando persona para resolución DGFP:", persona)
                 if persona['Movimientos'][0]['JURÍDICO'] != "Empresa/autónomo":
                     personas.append(persona)
                 
-                
-
             return jsonify({"personas": personas, "identificativos": identificativos})
-
-        
-
-            # return enviar_arxiu(buffer, path)
-            # enviar_arxiu(buffer, path)
     return redirect(url_for("privado"))
 
+
 @app.route("/genera-minuta", methods=["POST"])
+@login_required
 def genera_minuta():
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
     if request.method == "POST":
         archivo = request.files.get("file")
 
@@ -751,12 +505,10 @@ def genera_minuta():
         except json.JSONDecodeError as e:
             return jsonify({"error": f"JSON inválido: {e}"}), 400
         
-
         files = []
         for res in resultados:
-            
             datos_recopilados = {
-                "Nombre": res["persona"]["Nombre"],  # Directo, sin .get()
+                "Nombre": res["persona"]["Nombre"],
                 "NIF": res["persona"]["DNI"],
                 "Domicili": res["valores"]["Domicili"],
                 "CP": res["valores"]["CP"],
@@ -775,47 +527,18 @@ def genera_minuta():
                 "Dates_inici_final": res["valores"]["Dates_inici_final"],
             }
             
- 
-
             result = crea_designa.on_process(json_data, datos_identificativos, tipo="min", minuta_datos=datos_recopilados) 
             if result is None:
                 return "Procesamiento falló: on_process devolvió None", 400
             files.append(result)
             
-        if len(files) == 1:
-            buffer, path = files[0]
-            return send_file(buffer, as_attachment=True, download_name=path)
-
-        tmp_zip = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
-        tmp_zip.close()
-        try:
-            with zipfile.ZipFile(tmp_zip.name, "w", zipfile.ZIP_DEFLATED) as zf:
-                for buffer, path in files:
-                    if isinstance(buffer, str) and os.path.isfile(buffer):
-                        zf.write(buffer, arcname=path)
-                    elif isinstance(buffer, (bytes, bytearray)):
-                        zf.writestr(path, buffer)
-                    elif hasattr(buffer, "read"):
-                        try:
-                            buffer.seek(0)
-                        except Exception:
-                            pass
-                        zf.writestr(path, buffer.read())
-                    else:
-                        zf.writestr(path, bytes(buffer))
-            try:
-                return send_file(tmp_zip.name, as_attachment=True, download_name="minutas.zip")
-            except TypeError:
-                return send_file(tmp_zip.name, as_attachment=True, attachment_filename="minutas.zip")
-        finally:
-            pass
+        return enviar_archivos_o_zip(files, "minutas.zip")
 
 
 # perfil
 @app.route("/actualizaperfil", methods=["POST"])
+@login_required
 def actualizaperfil():
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
     cursor = conn.cursor()
     user_id = session.get("user_id")
     if request.method == "POST":
@@ -861,9 +584,8 @@ def actualizaperfil():
 
 # datos perfil
 @app.route("/perfil", methods=["GET"])
+@login_required
 def perfil():
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
     cursor = conn.cursor()
     user_id = session.get("user_id")
 
@@ -900,10 +622,8 @@ def exceldates():
     return jsonify(resultado)
 
 @app.route("/recordatoridates", methods=["POST"])
+@login_required
 def recordatoridates():
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
-    
     if request.method == "POST":
         data = request.get_json() if request.is_json else request.form
         
@@ -988,15 +708,13 @@ def recordatoridates():
 # FALTA CREAR EL PROMPT PER A RESOLDRE LA RESPOSTA
 
 @app.route("/comprovaperfil", methods=["POST"])
+@login_required
 def comprovaperfil():
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
-
     perfil = request.json.get("perfil")
     if not perfil:
         return jsonify({"error": "Falten dades en JSON"}), 400
     
-    prompt = f"Actúa com un expert lingüista en valencià normatiu (AVL) i castellà normatiu. En el següent json tens perfils en valencià i en castellà: {perfil}\n\n. Vull que revises el text i fes que complixca els requisits lingüístics següents:\n- El text ha d'estar en valencià normatiu de la Generalitat Valenciana AVL (desenrotllar enlloc desenvolupar, desenrotllament enlloc de desenvolupament, servici enlloc servei, este enlloc d'aquest, i totes les formes derivades...) o en castellà normatiu segons cada text, sense paraules en altres llengües. Aquells termes que traduixques de l'anglès tant en castellà com en valencià em poses després entre parèntesis el terme en anglès, però només si en el text original estan en anglès.\n- El text ha de ser formal i adequat per a un perfil professional.\n- El text ha de ser clar, concís i ben estructurat.\n\nRevisa el text i torna'm només el text corregit complint els requisits, sense cap explicació addicional ni comentaris. M'has de tornar el text amb un JSON així: {{\"perfil\": {{ \"objetivos_val\": \"Ací la resposta\", \"objetivos_cas\": \"Ací la resposta\", \"contenidos_val\": \"Ací la resposta\", \"contenidos_cas\": \"Ací la resposta\"}}}}, però amb les respostes del perfil corregit segons els requisits lingüístics indicats, a més cal que siguen equivalents en la corresponent llengüa en el castellà i el valencià. No has de canviar res més del JSON, és necessari que siga eixe format de JSON inamovible, només el text del perfil per a complir els requisits. Si el text ja compleix els requisits, torna'm el mateix text sense canvis. Només vull el JSON pur com a resposta i és important que tingues en compte les indiciacions lingüistiques que t'he donat."
+    prompt = f"Actúa com un expert lingüista en valencià normatiu (AVL) i castellà normatiu. En el següent json tens perfils en valencià i en castellà: {perfil}\n\n. Vull que revises el text i fes que complixca els requisits lingüístics següents:\n- El text ha d'estar en valencià normatiu de la Generalitat Valenciana AVL (desenrotllar enlloc desenvolupar, desenrotllament enlloc de desenvolupament, servici enlloc servei, este enlloc d'aquest, i totes les formes derivades...) o en castellà normatiu segons cada text, sinó paraules en altres llengües. Aquells termes que traduixques de l'anglès tant en castellà como en valencià em poses després entre parèntesis el terme en anglès, però només si en el text original estan en anglès.\n- El text ha de ser formal i adequat per a un perfil professional.\n- El text ha de ser clar, concís i ben estructurat.\n\nRevisa el text i torna'm només el text corregit complint els requisits, sense cap explicació addicional ni comentaris. M'has de tornar el text amb un JSON així: {{\"perfil\": {{ \"objetivos_val\": \"Ací la resposta\", \"objetivos_cas\": \"Ací la resposta\", \"contenidos_val\": \"Ací la resposta\", \"contenidos_cas\": \"Ací la resposta\"}}}}, però amb les respostes del perfil corregit segons els requisits lingüístics indicats, a més cal que siguen equivalents en la corresponent llengüa en el castellà i el valencià. No has de canviar res més del JSON, és necessari que siga eixe format de JSON inamovible, només el text del perfil per a complir els requisits. Si el text ja compleix els requisits, torna'm el mateix text sinó canvis. Només vull el JSON pur com a resposta i és important que tingues en compte les indiciacions lingüistiques que t'he donat."
 
     GOOGLE_AI_KEY = conn.cursor().execute("SELECT api_key FROM users WHERE id = ?", (session.get("user_id"),)).fetchone()["api_key"]
     
@@ -1019,10 +737,8 @@ def comprovaperfil():
         return jsonify({"error": "Timeout (120s)"}), 408
 
 @app.route("/imatgedates", methods=["POST"])
+@login_required
 def imatgedates():
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
-    
     if request.method == "POST":
         archivo = request.files.get("file")
 
@@ -1052,19 +768,8 @@ def imatgedates():
 
 
 @app.route("/usuaris", methods=["GET"])
+@admin_required
 def usuaris():
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
-
-    current_user = conn.cursor().execute(
-        "SELECT username FROM users WHERE id = ?",
-        (session.get("user_id"),)
-    ).fetchone()
-
-    if not current_user or current_user["username"] not in ["alfredo", "alviboi", "gmunoz"]:
-        return jsonify({"error": "No estás autorizado"}), 403
-    
-
     rows = conn.cursor().execute(
         "SELECT id, username, nombre, apellidos, email, api_key FROM users ORDER BY id"
     ).fetchall()
@@ -1072,18 +777,8 @@ def usuaris():
     return jsonify(usuarios)
 
 @app.route("/usuaris/update", methods=["POST"])
+@admin_required
 def usuaris_update():
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
-    
-    current_user = conn.cursor().execute(
-        "SELECT username FROM users WHERE id = ?",
-        (session.get("user_id"),)
-    ).fetchone()
-
-    if not current_user or current_user["username"] not in ["alfredo", "alviboi", "gmunoz"]:
-        return jsonify({"error": "No estás autorizado"}), 403
-
     data = request.get_json()
     if not data or not data.get("id"):
         return jsonify({"error": "Falta ID"}), 400
@@ -1114,18 +809,8 @@ def usuaris_update():
         return jsonify({"error": str(e)}), 500
     
 @app.route("/usuaris/delete", methods=["POST"])
+@admin_required
 def usuaris_delete():
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
-    
-    current_user = conn.cursor().execute(
-        "SELECT username FROM users WHERE id = ?",
-        (session.get("user_id"),)
-    ).fetchone()
-
-    if not current_user or current_user["username"] not in ["alfredo", "alviboi", "gmunoz"]:
-        return jsonify({"error": "No estás autorizado"}), 403
-
     user_id = request.args.get("id")
     if not user_id:
         return jsonify({"error": "Falta ID"}), 400
@@ -1136,3 +821,214 @@ def usuaris_delete():
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+
+# ==========================================================================
+# Flask Routes SIGNAR AUTOFIRMA
+# ==========================================================================
+
+@app.route('/')
+def index():
+    """Render the main client dashboard."""
+    return render_template('index.html')
+
+@app.route('/upload_excel_signar', methods=['POST'])
+def upload_excel_signar():
+    """
+    Accepts the uploaded plantilla.xlsx file, parses it using pandas,
+    generates a beautifully formatted PDF certificate for each row,
+    and returns their Base64 encodings to the frontend queue.
+    """
+    if 'file' not in request.files or 'batch_id' not in request.form:
+        return jsonify({'success': False, 'error': 'Parámetros incompletos.'}), 400
+        
+    file = request.files['file']
+    batch_id = request.form['batch_id']
+    
+    # Secure batch_id to prevent directory traversal
+    batch_id = os.path.basename(batch_id)
+    if not batch_id or batch_id == '..':
+        return jsonify({'success': False, 'error': 'Identificador de lote no válido.'}), 400
+        
+    if file.filename == '':
+        return jsonify({'success': False, 'error': 'El nombre del archivo está vacío.'}), 400
+        
+    if not allowed_file(file.filename):
+        return jsonify({'success': False, 'error': 'Tipo de archivo no permitido. Solo se aceptan archivos Excel (.xlsx).'}), 400
+
+    try:
+        # Create unique directory for this batch upload
+        batch_upload_dir = os.path.join(app.config['UPLOAD_FOLDER'], batch_id)
+        os.makedirs(batch_upload_dir, exist_ok=True)
+        
+        # Save Excel file
+        excel_path = os.path.join(batch_upload_dir, "plantilla_procesada.xlsx")
+        file.save(excel_path)
+        
+        # Load and parse Excel
+        df = pd.read_excel(excel_path)
+        df = df.fillna('')  # Replace all NaNs with empty strings safely
+        
+        # Check required columns
+        required_cols = [
+            'nombre y apellidos', 'dni', 'nombre del curso', 'nombre del asesor',
+            'lugar de realización', 'hora inicio', 'hora final', 'fecha de asistencia'
+        ]
+        missing_cols = [col for col in required_cols if col not in df.columns]
+        if missing_cols:
+            return jsonify({
+                'success': False,
+                'error': f"La plantilla Excel no contiene las columnas necesarias. Faltan: {', '.join(missing_cols)}"
+            }), 400
+            
+        generated_files = []
+        
+        # Generate PDF for each attendee row
+        for idx, row in df.iterrows():
+            raw_name = str(row.get('nombre y apellidos', f"justificante_{idx}")).strip()
+            if not raw_name:
+                continue  # skip empty rows
+                
+            # Clean name for safe filename
+            clean_name = "".join(c for c in raw_name if c.isalnum() or c in (' ', '_', '-')).strip()
+            clean_name = clean_name.replace(' ', '_')
+            original_pdf_name = f"justificante_{clean_name}.pdf"
+            
+            # Generate a secure prefix
+            unique_filename = f"{uuid.uuid4().hex}_{original_pdf_name}"
+            pdf_path = os.path.join(batch_upload_dir, unique_filename)
+            
+            # Generate the PDF
+            generate_pdf_from_row(row, pdf_path)
+            
+            # Convert PDF to Base64
+            with open(pdf_path, "rb") as f:
+                pdf_bytes = f.read()
+                pdf_base64 = base64.b64encode(pdf_bytes).decode('utf-8')
+                
+            generated_files.append({
+                'original_filename': original_pdf_name,
+                'filename': unique_filename,
+                'pdf_base64': pdf_base64
+            })
+            
+        if not generated_files:
+            return jsonify({'success': False, 'error': 'No se encontraron registros válidos para generar justificantes.'}), 400
+            
+        return jsonify({
+            'success': True,
+            'files': generated_files
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error parsing Excel & generating PDFs: {str(e)}")
+        return jsonify({'success': False, 'error': f"Error al procesar el archivo Excel: {str(e)}"}), 500
+
+@app.route('/save_signed', methods=['POST'])
+def save_signed():
+    """
+    Accepts a Base64-encoded signed PDF and a batch_id,
+    decodes it, and saves it in the batch signed folder.
+    """
+    data = request.get_json()
+    if not data or 'filename' not in data or 'signed_base64' not in data or 'batch_id' not in data:
+        return jsonify({'success': False, 'error': 'Parámetros incompletos.'}), 400
+        
+    filename = os.path.basename(data['filename'])
+    batch_id = os.path.basename(data['batch_id'])
+    signed_base64 = data['signed_base64']
+    
+    if not batch_id or batch_id == '..':
+         return jsonify({'success': False, 'error': 'Identificador de lote no válido.'}), 400
+         
+    if ',' in signed_base64:
+        signed_base64 = signed_base64.split(',', 1)[1]
+        
+    try:
+        signed_bytes = base64.b64decode(signed_base64)
+        
+        # Ensure batch directory exists inside signed_files
+        batch_signed_dir = os.path.join(app.config['SIGNED_FOLDER'], batch_id)
+        os.makedirs(batch_signed_dir, exist_ok=True)
+        
+        signed_filename = f"firmado_{filename}"
+        signed_path = os.path.join(batch_signed_dir, signed_filename)
+        
+        # Write to disk
+        with open(signed_path, "wb") as f:
+            f.write(signed_bytes)
+            
+        return jsonify({
+            'success': True,
+            'filename': signed_filename
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error saving signed PDF: {str(e)}")
+        return jsonify({'success': False, 'error': f"Error al guardar el archivo firmado: {str(e)}"}), 500
+
+@app.route('/download_batch/<batch_id>', methods=['GET'])
+def download_batch(batch_id):
+    """
+    Packages all signed PDF documents in the specified batch into a single ZIP file,
+    deletes all uploaded/signed directories from disk to ensure zero persistence,
+    and returns the ZIP file in-memory for download.
+    """
+    batch_id = os.path.basename(batch_id)
+    if not batch_id or batch_id == '..':
+        return "Lote no válido", 400
+
+    batch_signed_dir = os.path.join(app.config['SIGNED_FOLDER'], batch_id)
+    batch_upload_dir = os.path.join(app.config['UPLOAD_FOLDER'], batch_id)
+
+    if not os.path.exists(batch_signed_dir):
+        return "El lote de firmas no existe, ha expirado o ya ha sido descargado.", 404
+
+    try:
+        # 1. Read all signed PDFs from disk into memory
+        files_to_zip = []
+        for filename in os.listdir(batch_signed_dir):
+            file_path = os.path.join(batch_signed_dir, filename)
+            if os.path.isfile(file_path):
+                with open(file_path, 'rb') as f:
+                    # Clean up unique secure prefix from the zip entries
+                    # signed filename has format: firmado_<uuid>_justificante_<cleanName>.pdf
+                    clean_name = filename
+                    parts = filename.split('_', 2)
+                    if len(parts) >= 3 and len(parts[1]) == 32:
+                        clean_name = f"firmado_{parts[2]}"
+                    files_to_zip.append((clean_name, f.read()))
+
+        # 2. PHYSICALLY DELETE ALL DIRECTORIES ON SERVER DISK IMMEDIATELY
+        # This completely guarantees no user documents remain on the server!
+        shutil.rmtree(batch_signed_dir, ignore_errors=True)
+        shutil.rmtree(batch_upload_dir, ignore_errors=True)
+
+        # If there are no files signed in this batch, return error
+        if not files_to_zip:
+            return "No se encontraron archivos firmados en este lote.", 400
+
+        # 3. CONSTRUCT ZIP FILE ENTIRELY IN-MEMORY
+        memory_file = io.BytesIO()
+        with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for fname, fbytes in files_to_zip:
+                zipf.writestr(fname, fbytes)
+        
+        # Seek stream back to start
+        memory_file.seek(0)
+
+        # 4. Stream ZIP file directly to the client
+        return send_file(
+            memory_file,
+            mimetype='application/zip',
+            as_attachment=True,
+            download_name='justificantes_firmados.zip'
+        )
+
+    except Exception as e:
+        app.logger.error(f"Error packing batch {batch_id} to ZIP: {str(e)}")
+        # Attempt emergency clean up
+        shutil.rmtree(batch_signed_dir, ignore_errors=True)
+        shutil.rmtree(batch_upload_dir, ignore_errors=True)
+        return f"Error al generar el archivo comprimido: {str(e)}", 500

@@ -1,0 +1,876 @@
+/* ==========================================================================
+   Design System & Premium Tokens - PDF AutoFirma Signature App
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+
+:root {
+    /* Color Palette - HSL Tailored Neon & Slate Harmony */
+    --bg-gradient: linear-gradient(135deg, #090615 0%, #0d0926 50%, #03020a 100%);
+    --panel-bg: rgba(18, 14, 40, 0.6);
+    --panel-border: rgba(255, 255, 255, 0.06);
+    --glass-glow: rgba(147, 51, 234, 0.15);
+    
+    --primary: #a855f7;       /* Purple neon */
+    --primary-glow: rgba(168, 85, 247, 0.4);
+    --secondary: #3b82f6;     /* Bright Blue neon */
+    --secondary-glow: rgba(59, 130, 246, 0.4);
+    
+    --success: #10b981;       /* Emerald */
+    --success-glow: rgba(16, 185, 129, 0.25);
+    --danger: #ef4444;        /* Rose */
+    --danger-glow: rgba(239, 68, 68, 0.25);
+    
+    --text-main: #f3f4f6;     /* Crisp white */
+    --text-muted: #9ca3af;    /* Sleek grey */
+    --text-dark: #1f2937;
+    
+    --font-header: 'Outfit', sans-serif;
+    --font-body: 'Plus Jakarta Sans', sans-serif;
+    
+    --transition-smooth: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    --transition-fast: all 0.2s ease;
+}
+
+/* ==========================================================================
+   Base Styles
+   ========================================================================== */
+
+#GenCertsModal * {
+    box-sizing: border-box;
+}
+
+#GenCertsModal .modal-content {
+    background: var(--bg-gradient);
+    font-family: var(--font-body);
+    color: var(--text-main);
+    line-height: 1.6;
+}
+
+/* Premium Background Ambient Lights */
+#GenCertsModal .modal-content::before, #GenCertsModal .modal-content::after {
+    content: '';
+    position: absolute;
+    width: 450px;
+    height: 450px;
+    border-radius: 50%;
+    filter: blur(120px);
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.4;
+}
+
+#GenCertsModal .modal-content::before {
+    background: var(--primary);
+    top: -150px;
+    right: -100px;
+    animation: floatLight 20s infinite alternate ease-in-out;
+}
+
+#GenCertsModal .modal-content::after {
+    background: var(--secondary);
+    bottom: -150px;
+    left: -100px;
+    animation: floatLight 25s infinite alternate-reverse ease-in-out;
+}
+
+@keyframes floatLight {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(50px, 30px) scale(1.15); }
+}
+
+#GenCertsModal header {
+    padding: 30px 20px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    background: rgba(3, 2, 10, 0.2);
+    backdrop-filter: blur(10px);
+}
+
+.header-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.logo-glow {
+    font-family: var(--font-header);
+    font-weight: 800;
+    font-size: 2.2rem;
+    letter-spacing: -0.5px;
+    background: linear-gradient(90deg, var(--text-main) 20%, var(--primary) 60%, var(--secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-block;
+    filter: drop-shadow(0 2px 10px rgba(168, 85, 247, 0.25));
+}
+
+.logo-subtitle {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+/* ==========================================================================
+   Main Layout & Glassmorphism Panels
+   ========================================================================== */
+
+#GenCertsModal main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    max-width: 800px;
+    width: 100%;
+    margin: 0 auto;
+    z-index: 10;
+}
+
+.dashboard-card {
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border-radius: 24px;
+    padding: 40px;
+    width: 100%;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 40px var(--glass-glow);
+    transition: var(--transition-smooth);
+    position: relative;
+    overflow: hidden;
+}
+
+.dashboard-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+}
+
+/* ==========================================================================
+   Interactive Progress Steps
+   ========================================================================== */
+
+.step-tracker {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+    position: relative;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.step-tracker::before {
+    content: '';
+    position: absolute;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.08);
+    top: 18px;
+    left: 10px;
+    right: 10px;
+    z-index: 1;
+}
+
+.step-line-progress {
+    position: absolute;
+    height: 2px;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    top: 18px;
+    left: 10px;
+    width: 0%;
+    z-index: 2;
+    transition: var(--transition-smooth);
+}
+
+.step-node {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.step-circle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #110d29;
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    transition: var(--transition-smooth);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.step-node.active .step-circle {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: white;
+    box-shadow: 0 0 20px var(--primary-glow);
+}
+
+.step-node.completed .step-circle {
+    border-color: var(--success);
+    background: var(--success);
+    color: white;
+    box-shadow: 0 0 15px var(--success-glow);
+}
+
+.step-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    transition: var(--transition-smooth);
+}
+
+.step-node.active .step-label {
+    color: var(--text-main);
+    font-weight: 600;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+.step-node.completed .step-label {
+    color: var(--success);
+}
+
+/* ==========================================================================
+   Panel Container & Dynamic Visibility
+   ========================================================================== */
+
+.step-panel {
+    display: none;
+    animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.step-panel.active {
+    display: block;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ==========================================================================
+   Step 1: Custom Drag & Drop File Zone
+   ========================================================================== */
+
+.dropzone-container {
+    border: 2px dashed rgba(255, 255, 255, 0.12);
+    border-radius: 20px;
+    padding: 50px 30px;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.015);
+    transition: var(--transition-smooth);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.dropzone-container:hover, .dropzone-container.dragover {
+    border-color: var(--primary);
+    background: rgba(168, 85, 247, 0.04);
+    box-shadow: 0 0 30px rgba(168, 85, 247, 0.1) inset, 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.dropzone-icon {
+    font-size: 3.5rem;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+    transition: var(--transition-smooth);
+}
+
+.dropzone-container:hover .dropzone-icon {
+    color: var(--primary);
+    transform: translateY(-5px) scale(1.05);
+}
+
+.dropzone-container h3 {
+    font-family: var(--font-header);
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.dropzone-container p {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+}
+
+.dropzone-btn {
+    display: inline-block;
+    padding: 10px 24px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-main);
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: var(--transition-fast);
+}
+
+.dropzone-container:hover .dropzone-btn {
+    background: var(--primary);
+    border-color: var(--primary);
+    box-shadow: 0 0 15px var(--primary-glow);
+}
+
+/* ==========================================================================
+   Step 2: Processing & Connection States
+   ========================================================================== */
+
+.status-loading-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 30px 10px;
+}
+
+.pulse-spinner {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    margin-bottom: 30px;
+}
+
+.pulse-spinner .double-bounce1, .pulse-spinner .double-bounce2 {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background-color: var(--primary);
+    opacity: 0.6;
+    position: absolute;
+    top: 0;
+    left: 0;
+    animation: sk-bounce 2.0s infinite ease-in-out;
+}
+
+.pulse-spinner .double-bounce2 {
+    background-color: var(--secondary);
+    animation-delay: -1.0s;
+}
+
+@keyframes sk-bounce {
+    0%, 100% { transform: scale(0.0) }
+    50% { transform: scale(1.0) }
+}
+
+.pulse-spinner::after {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    right: -10px;
+    bottom: -10px;
+    border-radius: 50%;
+    border: 2px dashed rgba(168, 85, 247, 0.3);
+    animation: rotate 10s infinite linear;
+}
+
+@keyframes rotate {
+    100% { transform: rotate(360deg); }
+}
+
+.status-title {
+    font-family: var(--font-header);
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+.status-desc {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    text-align: center;
+    max-width: 400px;
+    margin-bottom: 25px;
+}
+
+.status-sub-desc {
+    font-size: 0.8rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 10px 15px;
+    border-radius: 8px;
+    color: var(--primary);
+    text-align: center;
+    max-width: 320px;
+    animation: pulseGlow 2s infinite alternate ease-in-out;
+}
+
+@keyframes pulseGlow {
+    0% { box-shadow: 0 0 5px rgba(168, 85, 247, 0.1); opacity: 0.8; }
+    100% { box-shadow: 0 0 15px rgba(168, 85, 247, 0.25); opacity: 1; }
+}
+
+/* ==========================================================================
+   Step 3: Success Screen & Download
+   ========================================================================== */
+
+.success-container {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.success-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: rgba(16, 185, 129, 0.15);
+    border: 2px solid var(--success);
+    color: var(--success);
+    font-size: 2.2rem;
+    margin-bottom: 25px;
+    box-shadow: 0 0 30px var(--success-glow);
+    animation: popIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes popIn {
+    0% { transform: scale(0); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.success-title {
+    font-family: var(--font-header);
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.success-desc {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 35px;
+}
+
+.download-options-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    max-width: 480px;
+    margin: 0 auto 35px auto;
+}
+
+@media (min-width: 550px) {
+    .download-options-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.download-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    transition: var(--transition-smooth);
+    cursor: pointer;
+}
+
+.download-card:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.12);
+    transform: translateY(-4px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.download-card-icon {
+    font-size: 2.2rem;
+    margin-bottom: 4px;
+}
+
+.download-card-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.download-card-desc {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.btn-premium {
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: var(--transition-fast);
+    width: 100%;
+    justify-content: center;
+    margin-top: auto;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: white;
+    box-shadow: 0 4px 15px var(--primary-glow);
+}
+
+.btn-primary:hover {
+    box-shadow: 0 6px 20px rgba(168, 85, 247, 0.6);
+    transform: scale(1.02);
+}
+
+.btn-secondary {
+    background: var(--secondary);
+    color: white;
+    box-shadow: 0 4px 15px var(--secondary-glow);
+}
+
+.btn-secondary:hover {
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6);
+    transform: scale(1.02);
+}
+
+.btn-reset {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text-muted);
+    padding: 12px 30px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: var(--transition-fast);
+}
+
+.btn-reset:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-main);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* ==========================================================================
+   Error Alert Panels
+   ========================================================================== */
+
+.error-alert {
+    background: rgba(239, 68, 68, 0.07);
+    border: 1px solid rgba(239, 68, 68, 0.15);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 25px;
+    display: none;
+    align-items: flex-start;
+    gap: 15px;
+    animation: shake 0.5s ease;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-6px); }
+    40%, 80% { transform: translateX(6px); }
+}
+
+.error-icon {
+    font-size: 1.5rem;
+    color: var(--danger);
+    flex-shrink: 0;
+}
+
+.error-content h4 {
+    font-family: var(--font-header);
+    font-size: 1rem;
+    color: var(--text-main);
+    margin-bottom: 4px;
+}
+
+.error-content p {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+/* ==========================================================================
+   Batch File Queue Styles
+   ========================================================================== */
+
+.file-list {
+    margin: 25px 0;
+    max-height: 220px;
+    overflow-y: auto;
+    text-align: left;
+    padding: 5px;
+    border-radius: 14px;
+    background: rgba(0, 0, 0, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+/* Custom Scrollbar for sleek UI */
+.file-list::-webkit-scrollbar {
+    width: 6px;
+}
+.file-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+.file-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+}
+.file-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    font-size: 0.85rem;
+    transition: var(--transition-smooth);
+}
+
+.file-item:last-child {
+    border-bottom: none;
+}
+
+.file-item.active {
+    background: rgba(168, 85, 247, 0.04);
+    box-shadow: 0 0 15px rgba(168, 85, 247, 0.05) inset;
+    border-left: 3px solid var(--primary);
+    padding-left: 13px;
+}
+
+.file-name-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    max-width: 75%;
+}
+
+.file-item-icon {
+    color: var(--text-muted);
+    flex-shrink: 0;
+    font-size: 1.1rem;
+}
+
+.file-item.active .file-item-icon {
+    color: var(--primary);
+    animation: iconBounce 1s infinite alternate;
+}
+
+@keyframes iconBounce {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-2px); }
+}
+
+.file-name {
+    color: var(--text-main);
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.file-status {
+    flex-shrink: 0;
+}
+
+/* Badges System */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-pending {
+    background: rgba(156, 163, 175, 0.08);
+    color: var(--text-muted);
+    border: 1px solid rgba(156, 163, 175, 0.15);
+}
+
+.badge-signing {
+    background: rgba(168, 85, 247, 0.1);
+    color: var(--primary);
+    border: 1px solid rgba(168, 85, 247, 0.3);
+    animation: badgePulse 1.2s infinite alternate ease-in-out;
+}
+
+@keyframes badgePulse {
+    0% { box-shadow: 0 0 2px rgba(168, 85, 247, 0.1); opacity: 0.8; }
+    100% { box-shadow: 0 0 10px rgba(168, 85, 247, 0.3); opacity: 1; }
+}
+
+.badge-success {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    box-shadow: 0 0 5px rgba(16, 185, 129, 0.1);
+}
+
+.badge-error {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* ==========================================================================
+   Excel Template Download Card Styles
+   ========================================================================== */
+
+.template-download-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 18px 24px;
+    margin-bottom: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    transition: var(--transition-smooth);
+    text-align: center;
+}
+
+@media (min-width: 580px) {
+    .template-download-card {
+        flex-direction: row;
+        text-align: left;
+    }
+}
+
+.template-download-card:hover {
+    border-color: rgba(16, 185, 129, 0.3);
+    background: rgba(16, 185, 129, 0.02);
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.05);
+}
+
+.template-info-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.template-excel-icon {
+    font-size: 2.5rem;
+    color: var(--success);
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    background: rgba(16, 185, 129, 0.1);
+    border-radius: 12px;
+}
+
+.template-text-details h4 {
+    font-family: var(--font-header);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 3px;
+}
+
+.template-text-details p {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+.template-download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: var(--success);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: var(--transition-fast);
+    box-shadow: 0 4px 12px var(--success-glow);
+    white-space: nowrap;
+}
+
+.template-download-btn:hover {
+    box-shadow: 0 6px 18px rgba(16, 185, 129, 0.5);
+    transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   Support Info Dialog & Footer
+   ========================================================================== */
+
+.info-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 12px;
+    padding: 15px;
+    margin-top: 25px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.info-banner-icon {
+    color: var(--primary);
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+footer {
+    padding: 30px 20px;
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: auto;
+    border-top: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+footer a {
+    color: var(--primary);
+    text-decoration: none;
+    transition: var(--transition-fast);
+}
+
+footer a:hover {
+    text-decoration: underline;
+    color: var(--text-main);
+}

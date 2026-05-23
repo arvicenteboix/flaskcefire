@@ -376,6 +376,14 @@
         function extractSignedBase64ForFile(resultObj, fileId, index) {
             if (!resultObj) return null;
 
+            if (typeof resultObj === 'string') {
+                try {
+                    resultObj = JSON.parse(resultObj);
+                } catch (e) {
+                    console.error("Error parsing resultObj in extractSignedBase64ForFile:", e);
+                }
+            }
+
             // Standard AutoFirma local JSON batch format: {"signs": [{"result": "...", "signature": "Base64..."}, ...]}
             if (resultObj.signs && Array.isArray(resultObj.signs)) {
                 const sigItem = resultObj.signs[index];

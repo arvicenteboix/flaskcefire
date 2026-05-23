@@ -1,4 +1,9 @@
 import os
+import base64
+import uuid
+import shutil
+import zipfile
+import io
 import pandas as pd
 from flask import Flask, request, jsonify, render_template, send_file
 from fpdf import FPDF

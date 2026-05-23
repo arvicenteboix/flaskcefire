@@ -1,9 +1,4 @@
 import os
-import base64
-import uuid
-import shutil
-import zipfile
-import io
 import pandas as pd
 from flask import Flask, request, jsonify, render_template, send_file
 from fpdf import FPDF
@@ -119,7 +114,7 @@ def generate_pdf_from_row(row_data, output_path):
     
     # Paragraph 2: Main Attendance Text
     body_text = (
-        f"Que En/Na {name} amb DNI {dni}, ha assistit el dia {date_attendance} "
+        f"Que {name} amb DNI {dni}, ha assistit el dia {date_attendance} "
         f"a la formació \"{course}\", realitzada al {place} de València, "
         f"en horari de {start_time} a {end_time} hores."
     )
@@ -135,7 +130,7 @@ def generate_pdf_from_row(row_data, output_path):
     
     # Sign-off date line
     pdf.set_font('Helvetica', '', 11.5)
-    pdf.cell(0, 8, f"València, a {date_attendance}.", ln=1)
+    pdf.cell(0, 8, f"València, a data de la signatura electrònica.", ln=1)
     pdf.ln(5)
     
     # Signature line subtitle

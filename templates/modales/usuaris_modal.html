@@ -7,6 +7,46 @@
       </div>
 
       <div class="modal-body">
+        <!-- Formulari per a registrar nou usuari (ocult per defecte) -->
+        <div id="addUserFormContainer" class="card mb-4 d-none border-success shadow-sm animate__animated animate__fadeIn">
+          <div class="card-header bg-success text-white d-flex justify-content-between align-items-center py-2">
+            <h6 class="mb-0 fw-bold"><i class="fas fa-user-plus me-2"></i>Registrar Nou Usuari</h6>
+            <button type="button" class="btn-close btn-close-white" id="btnCancelAddUser" aria-label="Tancar"></button>
+          </div>
+          <div class="card-body py-3">
+            <form id="addUserForm" novalidate>
+              <div class="row g-3">
+                <div class="col-md-6 col-lg-4">
+                  <label for="regUsername" class="form-label fw-bold small text-secondary">Username <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control form-control-sm" id="regUsername" name="username" required placeholder="Ex: alfredo123">
+                </div>
+                <div class="col-md-6 col-lg-4">
+                  <label for="regPassword" class="form-label fw-bold small text-secondary">Contrasenya <span class="text-danger">*</span></label>
+                  <input type="password" class="form-control form-control-sm" id="regPassword" name="password" required placeholder="••••••••">
+                </div>
+                <div class="col-md-6 col-lg-4">
+                  <label for="regEmail" class="form-label fw-bold small text-secondary">Correu Electrònic <span class="text-danger">*</span></label>
+                  <input type="email" class="form-control form-control-sm" id="regEmail" name="email" required placeholder="Ex: alfredo@example.com">
+                </div>
+                <div class="col-md-6">
+                  <label for="regNombre" class="form-label fw-bold small text-secondary">Nom</label>
+                  <input type="text" class="form-control form-control-sm" id="regNombre" name="nombre" placeholder="Ex: Alfredo">
+                </div>
+                <div class="col-md-6">
+                  <label for="regApellidos" class="form-label fw-bold small text-secondary">Cognoms</label>
+                  <input type="text" class="form-control form-control-sm" id="regApellidos" name="apellidos" placeholder="Ex: Pérez">
+                </div>
+              </div>
+              <div class="mt-3 text-end border-top pt-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary me-2" id="btnCancelAddUser2">Cancel·lar</button>
+                <button type="submit" class="btn btn-sm btn-success px-3">
+                  <i class="fas fa-check me-1"></i>Registrar Usuari
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
           <div>
             <p class="mb-0 text-muted">Llista d'usuaris</p>
@@ -44,7 +84,12 @@
 
       <div class="modal-footer justify-content-between">
         <small class="text-muted" data-role="users-status">Preparat per a carregar dades.</small>
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tancar</button>
+        <div>
+          <button type="button" class="btn btn-success me-2" id="btnShowAddUserForm">
+            <i class="fas fa-user-plus me-1"></i>Afegir nou usuari
+          </button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tancar</button>
+        </div>
       </div>
     </div>
   </div>
@@ -61,6 +106,12 @@
   const errorBox = modalEl.querySelector('[data-role="users-error"]');
   const statusBox = modalEl.querySelector('[data-role="users-status"]');
   const reloadBtn = modalEl.querySelector('[data-action="reload-users"]');
+
+  const addUserFormContainer = modalEl.querySelector('#addUserFormContainer');
+  const addUserForm = modalEl.querySelector('#addUserForm');
+  const btnShowAddUserForm = modalEl.querySelector('#btnShowAddUserForm');
+  const btnCancelAddUser = modalEl.querySelector('#btnCancelAddUser');
+  const btnCancelAddUser2 = modalEl.querySelector('#btnCancelAddUser2');
 
   function escapeHtml(value) {
     if (value === null || value === undefined) return '';
@@ -176,6 +227,81 @@
     } catch (error) {
       setError(error.message || 'Error desconegut carregant usuaris.');
     }
+  }
+
+  function showForm() {
+    addUserFormContainer.classList.remove('d-none');
+    addUserFormContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const usernameInput = addUserForm.querySelector('#regUsername');
+    if (usernameInput) usernameInput.focus();
+  }
+
+  function hideForm() {
+    addUserFormContainer.classList.add('d-none');
+    addUserForm.reset();
+  }
+
+  if (btnShowAddUserForm) btnShowAddUserForm.addEventListener('click', showForm);
+  if (btnCancelAddUser) btnCancelAddUser.addEventListener('click', hideForm);
+  if (btnCancelAddUser2) btnCancelAddUser2.addEventListener('click', hideForm);
+
+  if (addUserForm) {
+    addUserForm.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      
+      const usernameVal = addUserForm.querySelector('#regUsername').value.trim();
+      const passwordVal = addUserForm.querySelector('#regPassword').value.trim();
+      const nombreVal = addUserForm.querySelector('#regNombre').value.trim();
+      const apellidosVal = addUserForm.querySelector('#regApellidos').value.trim();
+      const emailVal = addUserForm.querySelector('#regEmail').value.trim();
+
+      if (!usernameVal || !passwordVal || !emailVal) {
+        errorBox.textContent = 'Els camps Username, Contrasenya i Correu Electrònic són obligatoris.';
+        errorBox.classList.remove('d-none');
+        return;
+      }
+
+      errorBox.classList.add('d-none');
+      errorBox.textContent = '';
+      
+      const submitBtn = addUserForm.querySelector('[type="submit"]');
+      const originalBtnText = submitBtn.innerHTML;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Registrant...';
+
+      try {
+        const response = await fetch('/registre_de_admin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: usernameVal,
+            password: passwordVal,
+            nombre: nombreVal,
+            apellidos: apellidosVal,
+            email: emailVal
+          })
+        });
+
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.error || err.message || 'Error registrant nou usuari.');
+        }
+
+        const newUser = await response.json();
+        
+        hideForm();
+        statusBox.textContent = `Usuari '${newUser.username}' registrat amb èxit!`;
+        
+        await loadUsers();
+      } catch (error) {
+        errorBox.textContent = error.message || 'Error de connexió al registrar usuari.';
+        errorBox.classList.remove('d-none');
+        errorBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnText;
+      }
+    });
   }
 
   // Evento de apertura del modal → cargar usuarios

@@ -823,6 +823,62 @@ def usuaris_delete():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route("/registre_de_admin", methods=["POST"])
+@admin_required
+def registre_de_admin():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Falten dades en JSON"}), 400
+
+    username = data.get("username", "").strip()
+    password = data.get("password", "").strip()
+    nombre = data.get("nombre", "").strip()
+    apellidos = data.get("apellidos", "").strip()
+    email = data.get("email", "").strip()
+
+    if not username or not password or not email:
+        return jsonify({"error": "Els camps Username, Contrasenya i Email són obligatoris."}), 400
+
+    password_hash = generate_password_hash(password)
+
+    try:
+        cursor = conn.cursor()
+        # Asegurarse de que la tabla de usuarios existe
+        cursor.execute(
+            """CREATE TABLE IF NOT EXISTS users (
+                   id INTEGER PRIMARY KEY AUTOINCREMENT,
+                   username TEXT UNIQUE NOT NULL,
+                   password TEXT NOT NULL,
+                   nombre TEXT,
+                   apellidos TEXT,
+                   email TEXT UNIQUE,
+                   api_key TEXT
+               )"""
+        )
+        conn.commit()
+
+        # Comprobar si el usuario o email ya existen
+        cursor.execute("SELECT id FROM users WHERE username = ? OR email = ?", (username, email))
+        if cursor.fetchone():
+            return jsonify({"error": "L'usuari o correu electrònic ja està registrat."}), 400
+
+        cursor.execute(
+            "INSERT INTO users (username, password, nombre, apellidos, email) VALUES (?, ?, ?, ?, ?)",
+            (username, password_hash, nombre, apellidos, email),
+        )
+        conn.commit()
+
+        # Devolver el usuario recién creado
+        new_id = cursor.lastrowid
+        row = conn.execute(
+            "SELECT id, username, nombre, apellidos, email, api_key FROM users WHERE id=?",
+            (new_id,),
+        ).fetchone()
+
+        return jsonify(dict(row)), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 
 # ==========================================================================

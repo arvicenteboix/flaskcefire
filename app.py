@@ -182,7 +182,8 @@ def registro():
     # Si ya está logueado, puedes mandarlo directo a /privado si quieres:
     # if session.get("logged_in"):
     #     return redirect(url_for("privado"))
-    return render_template("registro.html")
+    # return render_template("registro.html")
+    return render_template("prohibido.html")
 
 @app.route("/login", methods=["GET", "POST"])
 def login():

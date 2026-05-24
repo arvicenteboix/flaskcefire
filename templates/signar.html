@@ -144,7 +144,7 @@
                                     lote del
                                     servidor.
                                 </span>
-                                <a href="#" id="gencerts-zipDownloadLink" class="btn-premium btn-primary"
+                                <a href="#" id="gencerts-zipDownloadLink" class="btn-premium btn-primary2"
                                     style="padding: 12px 24px; font-size: 0.95rem;">
                                     <i data-feather="download"></i> Descargar Justificantes ZIP
                                 </a>
@@ -616,7 +616,7 @@
         zipDownloadLink.addEventListener('click', (e) => {
             setTimeout(() => {
                 zipDownloadLink.classList.add('btn-reset');
-                zipDownloadLink.classList.remove('btn-primary');
+                zipDownloadLink.classList.remove('btn-primary2');
                 zipDownloadLink.style.pointerEvents = 'none';
                 zipDownloadLink.innerHTML = '<i data-feather="lock"></i> Descargado (Lote Purgado)';
                 feather.replace();

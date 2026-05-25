@@ -357,7 +357,7 @@ def designasdgfp(datos, identificativos, campana, numero_a_letras=lambda x:str(x
 
     encabezado = doc.add_paragraph()
     encabezado.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    encabezado.add_run("\nDANIEL MCEVOY BRAVO, SECRETARI AUTONÒMIC D’EDUCACIÓ\n \n")
+    encabezado.add_run("\nMERCEDES CASTRO ALMUDÉVER, SUBDIRECTORA GENERAL DE FORMACIÓ DEL PROFESSORAT\n \n")
 
     tabla = doc.add_table(rows=1, cols=2)
     tabla.autofit = False

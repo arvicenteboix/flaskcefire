@@ -108,14 +108,14 @@ def enviar_correos_outlook(ruta_excel="contactos.xlsx", modo_borrador=True):
             
             # Configurar Asunto del correo (puedes personalizar esto o leerlo del Excel si añades una columna 'asunto')
             nombre_archivo = os.path.basename(ruta_adjunto)
-            correo.Subject = f"Envío automatizado: {nombre_archivo}"
+            correo.Subject = f"CEFIRE de FP: Justificante de asistencia {nombre_archivo}"
             
             # Configurar Cuerpo del correo en HTML
             correo.HTMLBody = f"""
             <html>
                 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333333;">
-                    <h2 style="color: #0056b3;">Estimado usuario,</h2>
-                    <p>Le hacemos entrega del documento solicitado adjunto a este correo electrónico.</p>
+                    <h2>Estimado usuario,</h2>
+                    <p>Le hacemos entrega del justificante de asistencia solicitado adjunto a este correo electrónico.</p>
                     <p><b>Detalles del adjunto:</b></p>
                     <ul>
                         <li><b>Archivo:</b> {nombre_archivo}</li>

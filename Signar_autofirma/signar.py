@@ -152,21 +152,38 @@ def generate_pdf_from_row(row_data, output_path):
 
 def ensure_excel_template():
     """Generates the downloadable Excel template pre-filled with mock data."""
-    template_path = os.path.join(STATIC_FOLDER, 'plantilla_justificantes.xlsx')
-    if not os.path.exists(template_path):
-        data = {
-            'nombre y apellidos': ['Joan Pérez i García', 'Maria Sanchis i Moreno'],
-            'dni': ['12345678A', '87654321B'],
-            'nombre del curso': ['Innovació en la Formació Professional', 'Eines Digitals per a Docents de FP'],
-            'nombre del asesor': ['Andreu Valor i Soler', 'Anna Segura i Beltran'],
-            'lugar de realización': ['CEFIRE Específic de FP', 'Sede de la Direcció General de FP'],
-            'hora inicio': ['09:00', '16:00'],
-            'hora final': ['14:00', '20:00'],
-            'fecha de asistencia': ['25 de maig de 2026', '26 de maig de 2026']
-        }
-        df = pd.DataFrame(data)
-        df.to_excel(template_path, index=False)
-        print(f"Plantilla Excel pre-generada en: {template_path}")
+    # Write to Signar_autofirma/static/
+    template_path1 = os.path.join(STATIC_FOLDER, 'plantilla_justificantes.xlsx')
+    # Write to root static/
+    parent_dir = os.path.dirname(BASE_DIR)
+    template_path2 = os.path.join(parent_dir, 'static', 'plantilla_justificantes.xlsx')
+    
+    for template_path in [template_path1, template_path2]:
+        need_generate = True
+        if os.path.exists(template_path):
+            try:
+                df = pd.read_excel(template_path)
+                if 'correo a enviar' in df.columns:
+                    need_generate = False
+            except Exception:
+                pass
+                
+        if need_generate:
+            data = {
+                'nombre y apellidos': ['Joan Pérez i García', 'Maria Sanchis i Moreno'],
+                'dni': ['12345678A', '87654321B'],
+                'nombre del curso': ['Innovació en la Formació Professional', 'Eines Digitals per a Docents de FP'],
+                'nombre del asesor': ['Andreu Valor i Soler', 'Anna Segura i Beltran'],
+                'lugar de realización': ['CEFIRE Específic de FP', 'Sede de la Direcció General de FP'],
+                'hora inicio': ['09:00', '16:00'],
+                'hora final': ['14:00', '20:00'],
+                'fecha de asistencia': ['25 de maig de 2026', '26 de maig de 2026'],
+                'correo a enviar': ['destinatario_prueba1@example.com', 'destinatario_prueba2@example.com']
+            }
+            df = pd.DataFrame(data)
+            os.makedirs(os.path.dirname(template_path), exist_ok=True)
+            df.to_excel(template_path, index=False)
+            print(f"Plantilla Excel pre-generada en: {template_path}")
 
 # Pre-generate plantilla on import/startup
 ensure_excel_template()

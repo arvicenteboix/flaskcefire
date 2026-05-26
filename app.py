@@ -930,7 +930,8 @@ def upload_excel_signar():
         # Check required columns
         required_cols = [
             'nombre y apellidos', 'dni', 'nombre del curso', 'nombre del asesor',
-            'lugar de realización', 'hora inicio', 'hora final', 'fecha de asistencia'
+            'lugar de realización', 'hora inicio', 'hora final', 'fecha de asistencia',
+            'correo a enviar'
         ]
         missing_cols = [col for col in required_cols if col not in df.columns]
         if missing_cols:
@@ -1057,7 +1058,49 @@ def download_batch(batch_id):
                         clean_name = f"firmado_{parts[2]}"
                     files_to_zip.append((clean_name, f.read()))
 
-        # 2. PHYSICALLY DELETE ALL DIRECTORIES ON SERVER DISK IMMEDIATELY
+        # 2. Read plantilla_procesada.xlsx and build contactos.xlsx in memory
+        contactos_data = []
+        excel_path = os.path.join(batch_upload_dir, "plantilla_procesada.xlsx")
+        if os.path.exists(excel_path):
+            try:
+                df_upload = pd.read_excel(excel_path)
+                df_upload = df_upload.fillna('')
+                for idx, row in df_upload.iterrows():
+                    raw_name = str(row.get('nombre y apellidos', '')).strip()
+                    if not raw_name:
+                        continue
+                    
+                    email = str(row.get('correo a enviar', '')).strip()
+                    
+                    clean_name_temp = "".join(c for c in raw_name if c.isalnum() or c in (' ', '_', '-')).strip()
+                    clean_name_temp = clean_name_temp.replace(' ', '_')
+                    original_pdf_name = f"justificante_{clean_name_temp}.pdf"
+                    signed_pdf_name = f"firmado_{original_pdf_name}"
+                    
+                    contactos_data.append({
+                        'email': email,
+                        'adjunto': signed_pdf_name
+                    })
+            except Exception as ex:
+                app.logger.error(f"Error reading plantilla_procesada.xlsx for contacts: {str(ex)}")
+
+        contactos_bytes = io.BytesIO()
+        if contactos_data:
+            df_contactos = pd.DataFrame(contactos_data)
+            df_contactos.to_excel(contactos_bytes, index=False)
+            contactos_bytes.seek(0)
+
+        # 3. Read enviar_correos.py
+        enviar_correos_bytes = b""
+        enviar_correos_src = os.path.join(BASE_DIR, 'Signar_autofirma', 'enviar_correos.py')
+        if os.path.exists(enviar_correos_src):
+            try:
+                with open(enviar_correos_src, 'rb') as f:
+                    enviar_correos_bytes = f.read()
+            except Exception as ex:
+                app.logger.error(f"Error reading enviar_correos.py: {str(ex)}")
+
+        # 4. PHYSICALLY DELETE ALL DIRECTORIES ON SERVER DISK IMMEDIATELY
         # This completely guarantees no user documents remain on the server!
         shutil.rmtree(batch_signed_dir, ignore_errors=True)
         shutil.rmtree(batch_upload_dir, ignore_errors=True)
@@ -1066,16 +1109,24 @@ def download_batch(batch_id):
         if not files_to_zip:
             return "No se encontraron archivos firmados en este lote.", 400
 
-        # 3. CONSTRUCT ZIP FILE ENTIRELY IN-MEMORY
+        # 5. CONSTRUCT ZIP FILE ENTIRELY IN-MEMORY
         memory_file = io.BytesIO()
         with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
             for fname, fbytes in files_to_zip:
                 zipf.writestr(fname, fbytes)
+            
+            # Add contactos.xlsx
+            if contactos_data:
+                zipf.writestr('contactos.xlsx', contactos_bytes.getvalue())
+                
+            # Add enviar_correos.py
+            if enviar_correos_bytes:
+                zipf.writestr('enviar_correos.py', enviar_correos_bytes)
         
         # Seek stream back to start
         memory_file.seek(0)
 
-        # 4. Stream ZIP file directly to the client
+        # 6. Stream ZIP file directly to the client
         return send_file(
             memory_file,
             mimetype='application/zip',

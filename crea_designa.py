@@ -864,6 +864,8 @@ def generar_skills_resolc(datos, identificativos, partida, fecha, centre_educati
             unitats = f"{unitats} casos"
         elif concepte == "tutorización":
             unitats = f"{unitats} setmanes"
+        elif concepte == "ponente":
+            unitats = f"{unitats} hores"
         row[4].text = unitats
         # row[5].text = str(mov.get("TIPO DE INTERVENCIÓN*/ TIPUS D'INTERVENCIÓ*", ""))
         # Añadir sufijo a 'tarificació' según el valor de 'concepte'

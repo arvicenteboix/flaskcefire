@@ -591,6 +591,8 @@ def generar_skills(datos, identificativos, partida, numero_a_letras=lambda x:str
             unitats = f"{unitats} casos"
         elif concepte == "tutorización":
             unitats = f"{unitats} setmanes"
+        elif concepte == "ponente":
+            unitats = f"{unitats} hores"
         row[2].text = unitats
         row[3].text = str(mov.get("TIPO DE INTERVENCIÓN*/ TIPUS D'INTERVENCIÓ*", ""))
         # Añadir sufijo a 'tarificació' según el valor de 'concepte'
@@ -1107,6 +1109,8 @@ def generar_skills_certifica(datos, identificativos, numero_a_letras=lambda x:st
             unitats = f"{unitats} unitats"
         elif concepte == "tutorización":
             unitats = f"{unitats} setmanes"
+        elif concepte == "ponente":
+            unitats = f"{unitats} hores"
         row[2].text = unitats
         row[3].text = str(mov.get("TIPO DE INTERVENCIÓN*/ TIPUS D'INTERVENCIÓ*", ""))
         # Añadir sufijo a 'tarificació' según el valor de 'concepte'

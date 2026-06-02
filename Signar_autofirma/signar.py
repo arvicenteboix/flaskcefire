@@ -120,7 +120,7 @@ def generate_pdf_from_row(row_data, output_path):
     # Paragraph 2: Main Attendance Text
     body_text = (
         f"Que {name} amb DNI {dni}, ha assistit el dia {date_attendance} "
-        f"a la formació \"{course}\", realitzada al {place} de València, "
+        f"a la formació \"{course}\", realitzada al {place}, "
         f"en horari de {start_time} a {end_time} hores."
     )
     

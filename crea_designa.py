@@ -765,12 +765,12 @@ def generar_skills_resolc(datos, identificativos, partida, fecha, centre_educati
         designa_text = (
             f"Vist l'informe de director del CEFIRE de Formació Professional i Ensenyances artístiques i esportives del {fecha}, corresponent a la formació {codigo} - {curso} "
             f"realitzada de manera {modalidad_text} del {fechas}.\n"
-            f"Vist que els col·laboradors externs han realitzat en els termes establits i de manera adequada la labor "
+            f"Vist que els col·laboradors han realitzat en els termes establits i de manera adequada la labor "
             f"per a la qual van ser designats."
         )
 
         texto = (
-            f"Que ordene el pagament als col·laboradors externs relacionats a continuació, "   
+            f"Que ordene el pagament als col·laboradors relacionats a continuació, "   
             f"l'import total de {importe_total} €, amb la distribució indicada, per actuar com a "
             f"col·laboradors en l'activitat de formació {codigo} - {curso}, per actuar fora de l'horari normal de treball i amb càrrec a "
             f"l'aplicació pressupostària {partida}, de conformitat amb el DECRET 80/2025, de 3 de juny, del Consell "
